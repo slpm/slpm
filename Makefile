@@ -1,7 +1,7 @@
 CPPFLAGS += -Wall -Wextra -pedantic
 CPPFLAGS += -Os -g
 CPPFLAGS += -DNDEBUG=1 -m32
-CFLAGS += -std=c11
+CFLAGS += -std=c99
 LDLIBS += -lsodium
 LDFLAGS += -static -m32
 CC := diet -v -Os $(CC)
