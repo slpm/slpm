@@ -1,0 +1,11 @@
+# vim: set expandtab ts=2:
+sudo: false
+language: cpp
+
+addons:
+  apt:
+    packages:
+    - libc6-dev-i386
+
+script:
+- make
