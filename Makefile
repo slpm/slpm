@@ -1,9 +1,9 @@
 CPPFLAGS += -Wall -Wextra -pedantic
-CPPFLAGS += -O2 -g
-CPPFLAGS += -DNDEBUG=1
+CPPFLAGS += -Os -g
+CPPFLAGS += -DNDEBUG=1 -m32
 CFLAGS += -std=c11
 LDLIBS += -lsodium
-LDFLAGS += -static
+LDFLAGS += -static -m32
 CC := diet -v -Os $(CC)
 
 .PHONY: all
