@@ -9,11 +9,32 @@ S := libsodium/src/libsodium/
 CPPFLAGS += -I$Sinclude
 ORIGCC := $(CC)
 
+CPPFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables
+CPPFLAGS += -fno-align-functions
+CPPFLAGS += -ffast-math
+LDFLAGS += -Wl,--relax
+LDFLAGS += -Wl,-hash-style=sysv -Wl,-hash-size=1
+LDFLAGS += -Wl,--build-id=none
+
+STRIP_SECTIONS := \
+	.note* \
+	.comment*
+
 .PHONY: all
-all: slpm
+all: slpm.comp
 
 slpm: CC := diet -v -Os $(CC)
 slpm: slpm.o __fxstat.o $S.libs/libsodium.a
+
+slpm.comp: slpm.stripped
+	upx --brute --force -o$@ $<
+
+%.stripped: %
+	objcopy --only-keep-debug $< $<.debug
+	objcopy $(addprefix -R ,$(STRIP_SECTIONS)) --strip-all $< $@
+	! type sstrip >/dev/null 2>&1 || sstrip -z $@
+	ls -la $@
+
 
 .PHONY: clean
 clean:
