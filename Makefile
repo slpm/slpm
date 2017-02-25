@@ -1,8 +1,7 @@
 CFLAGS += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 
-CPPFLAGS += -Wall -Wextra -pedantic
-# XXX -Werror
+CPPFLAGS += -Wall -Wextra -pedantic -Werror
 CPPFLAGS += -Os -g
 CPPFLAGS += -DNDEBUG=1
 CFLAGS += -std=c99
