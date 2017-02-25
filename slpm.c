@@ -181,9 +181,9 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 			const char* pass_chars = lookup_pass_chars(template[j]);
 			int len = strlen(pass_chars);
 			assert(sizeof(seed) > 1 + j);
-			write(1, &pass_chars[seed[1 + j] % len], 1);
+			(void)write(1, &pass_chars[seed[1 + j] % len], 1);
 		}
-		write(1, "\n", 1);
+		(void)write(1, "\n", 1);
 	}
 }
 
