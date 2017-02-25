@@ -1,3 +1,4 @@
+#define _BSD_SOURCE (1)
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
 

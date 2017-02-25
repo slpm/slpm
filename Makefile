@@ -23,7 +23,7 @@ STRIP_SECTIONS := \
 .PHONY: all
 all: slpm.comp
 
-slpm: CC := diet -v -Os $(CC)
+#slpm: CC := diet -v -Os $(CC)
 slpm: slpm.o __fxstat.o $S.libs/libsodium.a
 
 slpm.comp: slpm.stripped
