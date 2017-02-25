@@ -1,6 +1,7 @@
 #define _BSD_SOURCE (1)
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
+#include <sodium/utils.h>
 
 #include <arpa/inet.h>
 
@@ -120,7 +121,7 @@ static void
 buffer_reset(struct Buffer* b)
 {
 	b->last = b->first;
-	memset(b->first, 0, sizeof(b->first));
+	sodium_memzero(b->first, sizeof(b->first));
 }
 
 static uint8_t*
@@ -202,6 +203,7 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 
 	buffer_write(&buf, 1);
 	buffer_reset(&buf);
+	sodium_memzero(seed, sizeof(seed));
 }
 
 static const char*
@@ -247,7 +249,8 @@ main()
 	buffer_append_int(&buf, strlen(salt));
 	buffer_append_str(&buf, salt);
 
-	const char* pw = getpass("Password: ");
+	char *const pw = getpass("Password: ");
+	writes(1, "Deriving key...");
 	uint8_t key[64];
 	if (crypto_pwhash_scryptsalsa208sha256_ll(
 		  (const uint8_t*)pw
@@ -260,10 +263,13 @@ main()
 		, key
 		, sizeof(key)
 	)) {
+		sodium_memzero(pw, strlen(pw));
 		writes(2, "scrypt fail\n");
 		return -1;
 	}
+	sodium_memzero(pw, strlen(pw));
 
+	writes(1, "\rKey derivation complete.\n");
 	while (!0) {
 		char site[256];
 		const char* s = getstring("Site: ");
@@ -274,6 +280,7 @@ main()
 		write_passwords_for_site(key, sizeof(key), site, atoi(c));
 	}
 
+	sodium_memzero(key, sizeof(key));
 	writes(1, "\rBye!    \n");
 	return 0;
 }
