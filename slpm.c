@@ -92,7 +92,7 @@ static const struct {
 };
 
 static ssize_t
-writes(int fd, const char* s)
+writes(int fd, const void* s)
 {
 	return write(fd, s, strlen(s));
 }
@@ -154,6 +154,20 @@ buffer_append_int(struct Buffer* b, int i)
 	return 0;
 }
 
+static int
+buffer_append_char(struct Buffer* b, int c)
+{
+	if (b->first + 1 > b->first + sizeof(b->first)) return -1;
+	*b->last++ = c;
+	return 0;
+}
+
+static ssize_t
+buffer_write(struct Buffer* b, int fd)
+{
+	return write(fd, b->first, b->last - b->first);
+}
+
 static const char iv[] = "com.lyndir.masterpassword";
 
 static void
@@ -171,20 +185,23 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 		writes(2, "hmac fail\n");
 		return;
 	}
-	buffer_reset(&buf);
 
+	buffer_reset(&buf);
 	for (unsigned i = 0; i != COUNT(templates); ++i) {
-		writes(1, templates[i].name);
-		writes(1, ": ");
+		buffer_append_str(&buf, templates[i].name);
+		buffer_append_str(&buf, ": ");
 		const char* template = templates[i].template[seed[0] % templates[i].count];
 		for (unsigned j = 0; template[j]; ++j) {
 			const char* pass_chars = lookup_pass_chars(template[j]);
 			int len = strlen(pass_chars);
 			assert(sizeof(seed) > 1 + j);
-			(void)write(1, &pass_chars[seed[1 + j] % len], 1);
+			buffer_append_char(&buf, pass_chars[seed[1 + j] % len]);
 		}
-		(void)write(1, "\n", 1);
+		buffer_append_char(&buf, '\n');
 	}
+
+	buffer_write(&buf, 1);
+	buffer_reset(&buf);
 }
 
 static const char*
