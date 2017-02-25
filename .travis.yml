@@ -6,7 +6,8 @@ addons:
   apt:
     packages:
     - dietlibc-dev
-    - gcc-multilib:i386
+    - gcc-multilib
+    - libc6-dev-i386
     - upx
 
 script:
