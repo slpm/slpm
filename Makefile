@@ -1,7 +1,8 @@
-CFLAGS += -m32
+# TODO: this needs to be configurable
+CPPFLAGS += -m32
 LDFLAGS += -m32
 
-CFLAGS += -ffunction-sections -fdata-sections
+CPPFLAGS += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 
 CPPFLAGS += -Wall -Wextra -pedantic -Werror
@@ -47,6 +48,6 @@ clean:
 $S.libs/libsodium.a: CC := $(ORIGCC)
 $S.libs/libsodium.a:
 	cd libsodium && ./autogen.sh
-	cd libsodium && ./configure --disable-dependency-tracking --enable-minimal
+	cd libsodium && ./configure --disable-dependency-tracking --enable-minimal CPPFLAGS=-m32 LDFLAGS=-m32
 	$(MAKE) -C libsodium
 	$(MAKE) -C libsodium check
