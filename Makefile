@@ -5,7 +5,6 @@ CPPFLAGS += -Wall -Wextra -pedantic -Werror
 CPPFLAGS += -Os -g
 CPPFLAGS += -DNDEBUG=1
 CFLAGS += -std=c99
-LDFLAGS += -static
 CPPFLAGS += -Ilibsodium/src/libsodium/include
 
 .PHONY: all
