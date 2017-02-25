@@ -1,2 +1,5 @@
 *.[oda]
 slpm
+*.comp
+*.stripped
+*.debug
