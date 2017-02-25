@@ -1,3 +1,6 @@
+CFLAGS += -m32
+LDFLAGS += -m32
+
 CFLAGS += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 
