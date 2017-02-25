@@ -6,6 +6,7 @@ CPPFLAGS += -Os -g
 CPPFLAGS += -DNDEBUG=1
 CFLAGS += -std=c99
 CPPFLAGS += -Ilibsodium/src/libsodium/include
+ORIGCC := $(CC)
 
 .PHONY: all
 all: slpm
@@ -18,6 +19,7 @@ clean:
 	rm -f *.o slpm
 	$(MAKE) -C libsodium distclean
 
+libsodium/src/libsodium/.libs/libsodium.a: CC := $(ORIGCC)
 libsodium/src/libsodium/.libs/libsodium.a:
 	cd libsodium && ./autogen.sh
 	cd libsodium && ./configure --disable-dependency-tracking --enable-minimal
