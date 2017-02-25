@@ -5,8 +5,7 @@ language: cpp
 addons:
   apt:
     packages:
-    - libc6-dev-i386
-    - dietlibc-dev:i386
+    - dietlibc-dev
 
 script:
 - make
