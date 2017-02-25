@@ -10,11 +10,11 @@ CPPFLAGS += -DNDEBUG=1
 CFLAGS += -std=c99
 LDFLAGS += -static
 CPPFLAGS += -Ilibsodium/src/libsodium/include
-CC := diet -v -Os $(CC)
 
 .PHONY: all
 all: slpm
 
+slpm: CC := diet -v -Os $(CC)
 slpm: slpm.o __fxstat.o libsodium/src/libsodium/.libs/libsodium.a
 
 .PHONY: clean
