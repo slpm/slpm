@@ -239,9 +239,9 @@ main()
 {
 	const char* salt = getenv("SLPM_FULLNAME");
 	if (!salt) salt = "";
-	writes(1, "SLPM_FULLNAME=");
+	writes(1, "SLPM_FULLNAME='");
 	writes(1, salt);
-	writes(1, "\n");
+	writes(1, "'\n");
 	struct Buffer buf;
 
 	buffer_reset(&buf);
