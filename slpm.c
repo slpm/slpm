@@ -249,7 +249,7 @@ main()
 	buffer_append_int(&buf, strlen(salt));
 	buffer_append_str(&buf, salt);
 
-	char *const pw = getpass("Password: ");
+	char *const pw = getpass("Passphrase: ");
 	writes(1, "Deriving key...");
 	uint8_t key[64];
 	if (crypto_pwhash_scryptsalsa208sha256_ll(
