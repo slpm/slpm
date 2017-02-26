@@ -1,5 +1,7 @@
 ## Stateless Password Manager
 
+[![Build Status](https://travis-ci.org/Kodest/slpm.svg?branch=master)](https://travis-ci.org/Kodest/slpm)
+
 `slpm` is a dead simple password manager that will never store anything on disk
 nor use any random source, it derives every password from your full name (as
 salt) and your passphrase. Therefore your passphrase should be [strong
