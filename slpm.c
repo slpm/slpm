@@ -266,10 +266,12 @@ main()
 		, sizeof(key)
 	)) {
 		sodium_memzero(pw, strlen(pw));
+		buffer_reset(&buf);
 		writes(2, "scrypt fail\n");
 		return -1;
 	}
 	sodium_memzero(pw, strlen(pw));
+	buffer_reset(&buf);
 
 	writes(1, "\rKey derivation complete.\n");
 	while (!0) {
