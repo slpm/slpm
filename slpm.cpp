@@ -1,13 +1,12 @@
 #define _BSD_SOURCE (1)
+
+#include "buffer.h"
+
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
-#include <sodium/utils.h>
-
-#include <arpa/inet.h>
 
 #include <string.h>
 #include <assert.h>
-#include <unistd.h>
 
 #define COUNT(x) (sizeof(x) / sizeof(x[0]))
 
@@ -112,98 +111,38 @@ hmacsha256(
 	return 0;
 }
 
-/* TODO: This should be a C++ class */
-struct Buffer {
-	uint8_t first[8192];
-	uint8_t* last;
-};
-
-static void
-buffer_reset(struct Buffer* b)
-{
-	b->last = b->first;
-	sodium_memzero(b->first, sizeof(b->first));
-}
-
-static uint8_t*
-buffer_data(struct Buffer* b)
-{
-	return b->first;
-}
-
-static size_t
-buffer_size(const struct Buffer* b)
-{
-	return b->last - b->first;
-}
-
-static int
-buffer_append_str(struct Buffer* b, const char* s)
-{
-	size_t len = strlen(s);
-	if (b->first + len > b->first + sizeof(b->first)) return -1; /* XXX: bug! */
-	memcpy(b->last, s, len);
-	b->last += len;
-	return 0;
-}
-
-static int
-buffer_append_int(struct Buffer* b, int i)
-{
-	if (b->first + 4 > b->first + sizeof(b->first)) return -1; /* XXX: bug! */
-	*((uint32_t*)b->last) = htonl(i);
-	b->last += 4;
-	return 0;
-}
-
-static int
-buffer_append_char(struct Buffer* b, int c)
-{
-	if (b->first + 1 > b->first + sizeof(b->first)) return -1; /* XXX: bug! */
-	*b->last++ = c;
-	return 0;
-}
-
-static ssize_t
-buffer_write(struct Buffer* b, int fd)
-{
-	return write(fd, b->first, b->last - b->first);
-}
-
 static const char iv[] = "com.lyndir.masterpassword";
 
 static void
 write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, int counter)
 {
-	struct Buffer buf;
+	Buffer<uint8_t, 4096> buf;
 
-	buffer_reset(&buf);
-	buffer_append_str(&buf, iv);
-	buffer_append_int(&buf, strlen(site));
-	buffer_append_str(&buf, site);
-	buffer_append_int(&buf, counter);
+	buf += iv;
+	buf.append_network_long(strlen(site));
+	buf += site;
+	buf.append_network_long(counter);
 	uint8_t seed[crypto_auth_hmacsha256_BYTES];
-	if (hmacsha256(seed, buffer_data(&buf), buffer_size(&buf), key, keysize)) {
+	if (hmacsha256(seed, buf.data(), buf.size(), key, keysize)) {
 		writes(2, "hmac fail\n");
 		return;
 	}
 
-	buffer_reset(&buf);
+	Buffer<uint8_t, 4096> obuf;
 	for (unsigned i = 0; i != COUNT(templates); ++i) {
-		buffer_append_str(&buf, templates[i].name);
-		buffer_append_str(&buf, ": ");
+		obuf += templates[i].name;
+		obuf += ": ";
 		const char* templat = templates[i].templat[seed[0] % templates[i].count];
 		for (unsigned j = 0; templat[j]; ++j) {
 			const char* pass_chars = lookup_pass_chars(templat[j]);
 			int len = strlen(pass_chars);
 			assert(sizeof(seed) > 1 + j);
-			buffer_append_char(&buf, pass_chars[seed[1 + j] % len]);
+			obuf += pass_chars[seed[1 + j] % len];
 		}
-		buffer_append_char(&buf, '\n');
+		obuf += '\n';
 	}
 
-	buffer_write(&buf, 1);
-	buffer_reset(&buf);
+	obuf.write(1);
 	sodium_memzero(seed, sizeof(seed));
 }
 
@@ -240,17 +179,18 @@ main()
 {
 	const char* salt = getenv("SLPM_FULLNAME");
 	if (!salt) salt = "";
-	struct Buffer buf;
-	buffer_reset(&buf);
-	buffer_append_str(&buf, "SLPM_FULLNAME='");
-	buffer_append_str(&buf, salt);
-	buffer_append_str(&buf, "'\n");
-	buffer_write(&buf, 1);
+	{
+		Buffer<uint8_t, 256> buf;
+		buf += "SLPM_FULLNAME='";
+		buf += salt;
+		buf += "'\n";
+		buf.write(1);
+	}
 
-	buffer_reset(&buf);
-	buffer_append_str(&buf, iv);
-	buffer_append_int(&buf, strlen(salt));
-	buffer_append_str(&buf, salt);
+	Buffer<uint8_t, 4096> buf;
+	buf += iv;
+	buf.append_network_long(strlen(salt));
+	buf += salt;
 
 	char *const pw = getpass("Passphrase: ");
 	writes(1, "Deriving key...");
@@ -258,8 +198,8 @@ main()
 	if (crypto_pwhash_scryptsalsa208sha256_ll(
 		  (const uint8_t*)pw
 		, strlen(pw)
-		, buffer_data(&buf)
-		, buffer_size(&buf)
+		, buf.data()
+		, buf.size()
 		, 32768
 		, 8
 		, 2
@@ -267,12 +207,10 @@ main()
 		, sizeof(key)
 	)) {
 		sodium_memzero(pw, strlen(pw));
-		buffer_reset(&buf);
 		writes(2, "scrypt fail\n");
 		return -1;
 	}
 	sodium_memzero(pw, strlen(pw));
-	buffer_reset(&buf);
 
 	writes(1, "\rKey derivation complete.\n");
 	while (!0) {
