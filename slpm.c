@@ -112,6 +112,7 @@ hmacsha256(
 	return 0;
 }
 
+/* TODO: This should be a C++ class */
 struct Buffer {
 	uint8_t first[8192];
 	uint8_t* last;
@@ -140,7 +141,7 @@ static int
 buffer_append_str(struct Buffer* b, const char* s)
 {
 	size_t len = strlen(s);
-	if (b->first + len > b->first + sizeof(b->first)) return -1;
+	if (b->first + len > b->first + sizeof(b->first)) return -1; /* XXX: bug! */
 	memcpy(b->last, s, len);
 	b->last += len;
 	return 0;
@@ -149,7 +150,7 @@ buffer_append_str(struct Buffer* b, const char* s)
 static int
 buffer_append_int(struct Buffer* b, int i)
 {
-	if (b->first + 4 > b->first + sizeof(b->first)) return -1;
+	if (b->first + 4 > b->first + sizeof(b->first)) return -1; /* XXX: bug! */
 	*((uint32_t*)b->last) = htonl(i);
 	b->last += 4;
 	return 0;
@@ -158,7 +159,7 @@ buffer_append_int(struct Buffer* b, int i)
 static int
 buffer_append_char(struct Buffer* b, int c)
 {
-	if (b->first + 1 > b->first + sizeof(b->first)) return -1;
+	if (b->first + 1 > b->first + sizeof(b->first)) return -1; /* XXX: bug! */
 	*b->last++ = c;
 	return 0;
 }
