@@ -14,6 +14,7 @@ S := libsodium/src/libsodium/
 CPPFLAGS += -I$Sinclude
 ORIGCC := $(CC)
 
+CXXFLAGS += -fno-rtti -fno-exceptions
 CPPFLAGS += -fno-unwind-tables -fno-asynchronous-unwind-tables
 CPPFLAGS += -fno-align-functions
 CPPFLAGS += -ffast-math
