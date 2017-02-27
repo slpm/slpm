@@ -21,6 +21,7 @@ CPPFLAGS += -ffast-math
 LDFLAGS += -Wl,--relax
 LDFLAGS += -Wl,-hash-style=sysv -Wl,-hash-size=1
 LDFLAGS += -Wl,--build-id=none
+#LDFLAGS += -static -nostdlib
 
 STRIP_SECTIONS := \
 	.note* \
@@ -29,8 +30,7 @@ STRIP_SECTIONS := \
 .PHONY: all
 all: slpm.comp
 
-#slpm: CC := diet -v -Os $(CC)
-slpm: slpm.o __fxstat.o $S.libs/libsodium.a
+slpm: slpm.o $S.libs/libsodium.a
 
 slpm.comp: slpm.stripped
 	upx --brute --force -o$@ $<
