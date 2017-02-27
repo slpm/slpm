@@ -1,5 +1,6 @@
 # vim: set expandtab ts=2:
 sudo: false
+dist: trusty
 language: cpp
 
 addons:
