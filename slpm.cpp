@@ -12,9 +12,9 @@
 #define COUNT(x) (sizeof(x) / sizeof(x[0]))
 
 static const char*
-lookup_pass_chars(char template)
+lookup_pass_chars(char templat)
 {
-	switch (template) {
+	switch (templat) {
 	case 'V': return "AEIOU";
 	case 'C': return "BCDFGHJKLMNPQRSTVWXYZ";
 	case 'v': return "aeiou";
@@ -81,7 +81,7 @@ static const char* temp_pin[] = {
 
 static const struct {
 	const char* name;
-	const char** template;
+	const char** templat;
 	unsigned count;
 } templates[] = {
 	  DEF_TEMP("Maximum Security Password", temp_max_sec)
@@ -93,7 +93,7 @@ static const struct {
 };
 
 static ssize_t
-writes(int fd, const void* s)
+writes(int fd, const char* s)
 {
 	return write(fd, s, strlen(s));
 }
@@ -192,9 +192,9 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 	for (unsigned i = 0; i != COUNT(templates); ++i) {
 		buffer_append_str(&buf, templates[i].name);
 		buffer_append_str(&buf, ": ");
-		const char* template = templates[i].template[seed[0] % templates[i].count];
-		for (unsigned j = 0; template[j]; ++j) {
-			const char* pass_chars = lookup_pass_chars(template[j]);
+		const char* templat = templates[i].templat[seed[0] % templates[i].count];
+		for (unsigned j = 0; templat[j]; ++j) {
+			const char* pass_chars = lookup_pass_chars(templat[j]);
 			int len = strlen(pass_chars);
 			assert(sizeof(seed) > 1 + j);
 			buffer_append_char(&buf, pass_chars[seed[1 + j] % len]);
@@ -216,7 +216,7 @@ getstring(const char* prompt)
 	writes(1, prompt);
 
 	if (sord) {
-		char* eoln = memchr(buffer, '\0', sord);
+		char* eoln = reinterpret_cast<char*>(memchr(buffer, '\0', sord));
 		if (eoln) {
 			sord -= eoln + 1 - buffer;
 			memcpy(buffer, eoln + 1, sord);

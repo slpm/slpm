@@ -9,6 +9,7 @@ CPPFLAGS += -Wall -Wextra -pedantic -Werror
 CPPFLAGS += -Os -g
 CPPFLAGS += -DNDEBUG=1
 CFLAGS += -std=c99
+CXXFLAGS += -std=c++11
 S := libsodium/src/libsodium/
 CPPFLAGS += -I$Sinclude
 ORIGCC := $(CC)
