@@ -163,17 +163,17 @@ getstring(const char* prompt)
 	}
 
 	while (!0) {
-		const ssize_t rd = read(0, buffer + sord, sizeof(buffer) - sord);
-		if (rd <= 0) return 0;
-		sord += rd;
-		char* eoln = strchr(buffer, '\n');
-		if (eoln) {
+		if (char *const eoln = reinterpret_cast<char*>(memchr(buffer, '\n', sord))) {
 			*eoln = '\0';
 			return buffer;
 		}
+		const ssize_t rd = read(0, buffer + sord, sizeof(buffer) - sord);
+		if (rd <= 0) return 0;
+		sord += rd;
 	}
 }
 
+// TODO: get rid of getpass, and use -nostdlib
 int
 main()
 {
@@ -192,7 +192,8 @@ main()
 	buf.append_network_long(strlen(salt));
 	buf += salt;
 
-	char *const pw = getpass("Passphrase: ");
+	char *const env_pw = getenv("SLPM_PASSPHRASE");
+	char *const pw = env_pw ? env_pw : getpass("Passphrase: ");
 	writes(1, "Deriving key...");
 	uint8_t key[64];
 	if (crypto_pwhash_scryptsalsa208sha256_ll(

@@ -53,3 +53,7 @@ $S.libs/libsodium.a:
 	cd libsodium && ./configure --disable-dependency-tracking --enable-minimal CPPFLAGS=-m32 LDFLAGS=-m32
 	$(MAKE) -C libsodium
 	$(MAKE) -C libsodium check
+
+.PHONY: check
+check: slpm.comp
+	./check.sh
