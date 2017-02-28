@@ -14,6 +14,7 @@ addons:
 
 script:
 - make
+- make check
 
 deploy:
   provider: releases
