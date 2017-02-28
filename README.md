@@ -3,11 +3,11 @@
 [![Build Status](https://travis-ci.org/LaszloAshin/slpm.svg?branch=master)](https://travis-ci.org/LaszloAshin/slpm)
 
 `slpm` is a dead simple password manager that will never store anything on disk
-nor use any random source, it derives every password from your full name (as
+nor use any random source as it derives every password from your full name (as
 salt) and your passphrase. Therefore your passphrase should be [strong
-enough][diceware]! `slpm` curently uses the [MasterPasswordApp
-algorithm][mpwalgo] right now but it will default to [Argon2][] KDF and
-[blake2b][] secure hash in the future.
+enough][diceware]! `slpm` currently uses the [MasterPasswordApp
+algorithm][mpwalgo] but it will default to [Argon2][] KDF and [blake2b][] secure
+hash in the future.
 
 [diceware]: http://world.std.com/~reinhold/diceware.html
 [mpwalgo]: http://masterpasswordapp.com/algorithm.html
