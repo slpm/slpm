@@ -25,7 +25,7 @@ LDFLAGS += -static -nostdlib
 #LDFLAGS += -nostartfiles
 
 CPPFLAGS += -D_BSD_SOURCE -DHAVE_MMAP -DHAVE_SYS_MMAN_H
-CPPFLAGS := $(filter-out -fstack-protector,$(CPPFLAGS))
+CPPFLAGS := $(filter-out -fstack-protector,$(CPPFLAGS)) -fno-stack-protector
 
 STRIP_SECTIONS := \
 	.note* \
