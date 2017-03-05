@@ -6,7 +6,6 @@ language: cpp
 addons:
   apt:
     packages:
-    - dietlibc-dev
     - gcc-multilib
     - g++-multilib
     - libc6-dev-i386
