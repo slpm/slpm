@@ -1,5 +1,3 @@
-#define _BSD_SOURCE (1)
-
 #include "buffer.h"
 
 #include <sodium/crypto_auth_hmacsha256.h>
@@ -146,7 +144,18 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 	sodium_memzero(seed, sizeof(seed));
 }
 
-static const char*
+const void*
+memchr(const void* s, int c, size_t n)
+noexcept
+{
+	const char* p = reinterpret_cast<const char*>(s);
+	for (const char* q = p; q != p + n; ++q) {
+		if (*q == c) return q;
+	}
+	return nullptr;
+}
+
+static char*
 getstring(const char* prompt)
 {
 	static char buffer[256];
@@ -173,11 +182,93 @@ getstring(const char* prompt)
 	}
 }
 
-// TODO: get rid of getpass, and use -nostdlib
-int
-main()
+static char*
+mygetpass(const char* prompt)
 {
-	const char* salt = getenv("SLPM_FULLNAME");
+	// TODO: hide
+	return getstring(prompt);
+}
+
+size_t
+strlen(const char* s)
+{
+	const char* p = s;
+	while (*p) ++p;
+	return p - s;
+}
+
+int
+strncmp(const char* s1, const char* s2, size_t n)
+{
+	for (; n && (*s1 || *s2); ++s1, ++s2, --n) {
+		if (!*s1 ^ !*s2) return *s2 ? -1 : 1;
+		if (*s1 < *s2) return -1;
+		if (*s2 < *s1) return 1;
+	}
+	return 0;
+}
+
+char*
+strncpy(char* dest, const char* src, size_t n)
+{
+	size_t i;
+
+	for (i = 0; i < n && src[i] != '\0'; ++i) {
+		dest[i] = src[i];
+	}
+	for (; i < n; ++i) {
+		dest[i] = '\0';
+	}
+
+	return dest;
+}
+
+int
+atoi(const char* nptr)
+{
+	int result = 0;
+	for (; nptr && *nptr >= '0' && *nptr <= '9'; ++nptr) {
+		result = result * 10 + *nptr - '0';
+	}
+	return result;
+}
+
+void
+sodium_memzero(void * const pnt, const size_t len)
+{
+    volatile unsigned char *volatile pnt_ =
+        (volatile unsigned char * volatile) pnt;
+    size_t i = (size_t) 0U;
+
+    while (i < len) {
+        pnt_[i++] = 0U;
+    }
+}
+
+int *
+__errno_location(void) noexcept
+{
+	static int e = 0;
+	return &e;
+}
+
+static char*
+mygetenv(char* envp[], const char* name)
+{
+	const auto len = strlen(name);
+	for (int i = 0; envp[i]; ++i) {
+		if (!strncmp(envp[i], name, len) && envp[i][len] == '=') {
+			return envp[i] + len + 1;
+		}
+	}
+	return 0;
+}
+
+
+int
+main(int, char* [], char* envp[])
+{
+	const char* salt = mygetenv(envp, "SLPM_FULLNAME");
 	if (!salt) salt = "";
 	{
 		Buffer<uint8_t, 256> buf;
@@ -192,8 +283,12 @@ main()
 	buf.append_network_long(strlen(salt));
 	buf += salt;
 
-	char *const env_pw = getenv("SLPM_PASSPHRASE");
-	char *const pw = env_pw ? env_pw : getpass("Passphrase: ");
+	char *const env_pw = mygetenv(envp, "SLPM_PASSPHRASE");
+	char *const pw = env_pw ? env_pw : mygetpass("Passphrase: ");
+	if (!pw) {
+		writes(STDOUT_FILENO, "\n");
+		return -1;
+	}
 	writes(1, "Deriving key...");
 	uint8_t key[64];
 	if (crypto_pwhash_scryptsalsa208sha256_ll(

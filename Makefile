@@ -11,7 +11,7 @@ CPPFLAGS += -DNDEBUG=1
 CFLAGS += -std=c99
 CXXFLAGS += -std=c++11
 S := libsodium/src/libsodium/
-CPPFLAGS += -I$Sinclude
+CPPFLAGS += -I$Sinclude -I$Sinclude/sodium
 ORIGCC := $(CC)
 
 CXXFLAGS += -fno-rtti -fno-exceptions
@@ -21,7 +21,10 @@ CPPFLAGS += -ffast-math
 LDFLAGS += -Wl,--relax
 LDFLAGS += -Wl,-hash-style=sysv -Wl,-hash-size=1
 LDFLAGS += -Wl,--build-id=none
-#LDFLAGS += -static -nostdlib
+LDFLAGS += -static -nostdlib
+#LDFLAGS += -nostartfiles
+
+CPPFLAGS += -D_BSD_SOURCE -DHAVE_MMAP -DHAVE_SYS_MMAN_H
 
 STRIP_SECTIONS := \
 	.note* \
@@ -30,7 +33,18 @@ STRIP_SECTIONS := \
 .PHONY: all
 all: slpm.comp
 
-slpm: slpm.o $S.libs/libsodium.a
+O := start-Linux.o utils.o slpm.o
+O += $Scrypto_auth/hmacsha256/cp/hmac_hmacsha256.o
+O += $Scrypto_hash/sha256/cp/hash_sha256.o
+O += $Scrypto_pwhash/scryptsalsa208sha256/crypto_scrypt-common.o
+O += $Scrypto_pwhash/scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.o
+O += $Scrypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o
+O += $Scrypto_pwhash/scryptsalsa208sha256/scrypt_platform.o
+
+slpm: $O
+
+#libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS := $(filter-out -Werror,$(CPPFLAGS))
+libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS += -Wno-type-limits
 
 slpm.comp: slpm.stripped
 	upx --brute --force -o$@ $<
@@ -44,8 +58,8 @@ slpm.comp: slpm.stripped
 
 .PHONY: clean
 clean:
-	rm -f *.o slpm
-	$(MAKE) -C libsodium distclean
+	rm -f $O slpm
+#	$(MAKE) -C libsodium distclean
 
 $S.libs/libsodium.a: CC := $(ORIGCC)
 $S.libs/libsodium.a:
