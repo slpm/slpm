@@ -3,6 +3,16 @@
 #include <stdint.h>
 #include <stddef.h>
 
+void*
+__memcpy_chk(void *dstpp, const void *srcpp, size_t len, size_t dstlen)
+{
+	if (dstlen < len) _exit(1);
+	char* dp = dstpp;
+	const char* sp = srcpp;
+	for (; len; --len) *dp++ = *sp++;
+	return dstpp;
+}
+
 #if __i386__
 ssize_t
 write(int fd, const void* buf, size_t count)
@@ -61,6 +71,18 @@ munmap(void *addr, size_t length)
 		: "a" (0x5b), "b" (addr), "c" (length)
 	);
 	return result;
+}
+
+void
+__attribute__ ((noreturn))
+_exit(int status)
+{
+	__asm__(
+		"int $0x80"
+		:
+		: "a" (1), "b" (status)
+	);
+	__builtin_unreachable();
 }
 
 #endif // __i386__
