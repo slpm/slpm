@@ -3,8 +3,11 @@
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
 
-#include <string.h>
-#include <assert.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <cstring>
+#include <cassert>
 
 #define COUNT(x) (sizeof(x) / sizeof(x[0]))
 
@@ -156,13 +159,13 @@ noexcept
 }
 
 static char*
-getstring(const char* prompt)
+mygetstring(const char* prompt, int infd = STDIN_FILENO, int outfd = STDOUT_FILENO)
 {
 	static char buffer[256];
 	static int sord = 0;
 	static int processed = 0;
 	
-	writes(1, prompt);
+	writes(outfd, prompt);
 
 	if (processed) {
 		sodium_memzero(buffer, processed);
@@ -177,18 +180,70 @@ getstring(const char* prompt)
 			processed = eoln + 1 - buffer;
 			return buffer;
 		}
-		const ssize_t rd = read(0, buffer + sord, sizeof(buffer) - sord);
+		const ssize_t rd = read(infd, buffer + sord, sizeof(buffer) - sord);
 		if (rd <= 0) return 0;
 		sord += rd;
 	}
 }
 
+static char* getstring(const char* prompt) { return mygetstring(prompt); }
+
+struct Fd {
+	~Fd() { if (valid()) close(fd_); }
+	Fd(int fd) : fd_(fd) {}
+	Fd(const Fd&) = delete;
+	Fd& operator=(const Fd&) = delete;
+
+	bool valid() const { return fd_ != -1; }
+	int get() const { return fd_; }
+
+private:
+	int fd_;
+};
+
+struct HiddenInput {
+	~HiddenInput()
+	{
+		ioctl(fd_.get(), TCSETSF, &s_);
+		writes(fd_.get(), "\n");
+	}
+
+	HiddenInput()
+	: fd_(open("/dev/tty", O_RDWR | O_NOCTTY | O_CLOEXEC))
+	{
+		struct termios t;
+		ioctl(fd_.get(), TCGETS, &t);
+		s_ = t;
+		t.c_lflag &= ~(ECHO|ISIG);
+		t.c_lflag |= ICANON;
+		t.c_iflag &= ~(INLCR|IGNCR);
+		t.c_iflag |= ICRNL;
+		ioctl(fd_.get(), TCSETSF, &t);
+		ioctl(fd_.get(), TCSBRK, !0);
+	}
+
+	HiddenInput(const HiddenInput&) = delete;
+	HiddenInput& operator=(const HiddenInput&) = delete;
+
+	char*
+	getpass(const char* prompt)
+	const
+	{
+		return mygetstring(prompt, fd_.get(), fd_.get());
+	}
+
+private:
+	struct termios s_;
+	Fd fd_;
+};
+
 static char*
 mygetpass(const char* prompt)
 {
-	// TODO: hide
-	return getstring(prompt);
+	return HiddenInput().getpass(prompt);
 }
+
+// TODO: move this to utils
 
 size_t
 strlen(const char* s)
@@ -196,6 +251,17 @@ strlen(const char* s)
 	const char* p = s;
 	while (*p) ++p;
 	return p - s;
+}
+
+int
+strcmp(const char* s1, const char* s2)
+{
+	for (; *s1 || *s2; ++s1, ++s2) {
+		if (!*s1 ^ !*s2) return *s2 ? -1 : 1;
+		if (*s1 < *s2) return -1;
+		if (*s2 < *s1) return 1;
+	}
+	return 0;
 }
 
 int
@@ -265,7 +331,7 @@ mygetenv(char* envp[], const char* name)
 
 
 int
-main(int, char* [], char* envp[])
+main(int, char* argv[], char* envp[])
 {
 	const char* salt = mygetenv(envp, "SLPM_FULLNAME");
 	if (!salt) salt = "";
@@ -282,8 +348,8 @@ main(int, char* [], char* envp[])
 	buf.append_network_long(strlen(salt));
 	buf += salt;
 
-	char *const env_pw = mygetenv(envp, "SLPM_PASSPHRASE");
-	char *const pw = env_pw ? env_pw : mygetpass("Passphrase: ");
+	bool show_password = argv[1] && !strcmp(argv[1], "SHOW_PASSWORD");
+	char *const pw = (show_password ? getstring : mygetpass)("Passphrase: ");
 	if (!pw) {
 		writes(STDOUT_FILENO, "\n");
 		return -1;

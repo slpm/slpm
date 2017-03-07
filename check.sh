@@ -1,8 +1,8 @@
 #!/bin/sh
 
 export SLPM_FULLNAME="John Doe"
-export SLPM_PASSPHRASE="correct horse battery staple"
-./slpm.comp << EOF | diff -u3 expected-output /dev/stdin
+./slpm.comp SHOW_PASSWORD << EOF | diff -u3 expected-output /dev/stdin
+correct horse battery staple
 twitter.com
 1
 facebook.com
