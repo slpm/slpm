@@ -20,10 +20,10 @@ We run slpm using `Edgar Allan Poe` as full name and `footman liquid vacate
 rounding compare parsnip traffic uproar freemason duckbill` as passphrase:
 
 ```
-$ wget https://github.com/LaszloAshin/slpm/releases/download/v0.1.1/slpm.comp
+$ wget https://github.com/LaszloAshin/slpm/releases/download/v0.2.1/slpm.comp
 $ chmod +x slpm.comp
 $ SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp 
-SLPM_FULLNAME=Edgar Allan Poe
+SLPM_FULLNAME='Edgar Allan Poe'
 Password: 
 Key derivation complete.
 Site: twitter.com
