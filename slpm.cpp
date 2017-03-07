@@ -243,6 +243,13 @@ mygetpass(const char* prompt)
 	return HiddenInput().getpass(prompt);
 }
 
+int
+isatty(int fd)
+{
+	struct termios t;
+	return !ioctl(fd, TCGETS, &t);
+}
+
 // TODO: move this to utils
 
 size_t
@@ -331,7 +338,7 @@ mygetenv(char* envp[], const char* name)
 
 
 int
-main(int, char* argv[], char* envp[])
+main(int, char* [], char* envp[])
 {
 	const char* salt = mygetenv(envp, "SLPM_FULLNAME");
 	if (!salt) salt = "";
@@ -348,8 +355,7 @@ main(int, char* argv[], char* envp[])
 	buf.append_network_long(strlen(salt));
 	buf += salt;
 
-	bool show_password = argv[1] && !strcmp(argv[1], "SHOW_PASSWORD");
-	char *const pw = (show_password ? getstring : mygetpass)("Passphrase: ");
+	char *const pw = (isatty(STDIN_FILENO) ? mygetpass : getstring)("Passphrase: ");
 	if (!pw) {
 		writes(STDOUT_FILENO, "\n");
 		return -1;
