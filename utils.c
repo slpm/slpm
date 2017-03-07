@@ -85,4 +85,40 @@ _exit(int status)
 	__builtin_unreachable();
 }
 
+int
+open(const char* pathname, int flags, int mode)
+{
+	int result;
+	__asm__(
+		"int $0x80"
+		: "=a" (result)
+		: "a" (5), "b" (pathname), "c" (flags), "d" (mode)
+	);
+	return result;
+}
+
+int
+close(int fd)
+{
+	int result;
+	__asm__(
+		"int $0x80"
+		: "=a" (result)
+		: "a" (6), "b" (fd)
+	);
+	return result;
+}
+
+int
+ioctl(int fd, unsigned long request, unsigned long arg)
+{
+	int result;
+	__asm__(
+		"int $0x80"
+		: "=a" (result)
+		: "a" (0x36), "b" (fd), "c" (request), "d" (arg)
+	);
+	return result;
+}
+
 #endif // __i386__
