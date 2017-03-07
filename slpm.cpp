@@ -329,7 +329,7 @@ mygetenv(char* envp[], const char* name)
 {
 	const auto len = strlen(name);
 	for (int i = 0; envp[i]; ++i) {
-		if (!strncmp(envp[i], name, len)) {
+		if (!strncmp(envp[i], name, len) && envp[i][len] == '=') {
 			return envp[i] + len + 1;
 		}
 	}
@@ -340,12 +340,11 @@ mygetenv(char* envp[], const char* name)
 int
 main(int, char* [], char* envp[])
 {
-	const char* salt = mygetenv(envp, "SLPM_FULLNAME=");
+	const char* salt = mygetenv(envp, "SLPM_FULLNAME");
 	if (!salt) salt = "";
 	{
 		Buffer<uint8_t, 256> buf;
-		buf += "SLPM_FULLNAME=";
-		buf += '\'';
+		buf += "SLPM_FULLNAME='";
 		buf += salt;
 		buf += "'\n";
 		buf.write(1);
