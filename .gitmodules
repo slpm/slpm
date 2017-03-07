@@ -1,3 +1,6 @@
 [submodule "libsodium"]
 	path = libsodium
 	url = ../../jedisct1/libsodium.git
+[submodule "elfkickers"]
+	path = elfkickers
+	url = ../../BR903/ELFkickers.git
