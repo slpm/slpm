@@ -160,20 +160,21 @@ getstring(const char* prompt)
 {
 	static char buffer[256];
 	static int sord = 0;
+	static int processed = 0;
 	
 	writes(1, prompt);
 
-	if (sord) {
-		char* eoln = reinterpret_cast<char*>(memchr(buffer, '\0', sord));
-		if (eoln) {
-			sord -= eoln + 1 - buffer;
-			memcpy(buffer, eoln + 1, sord);
-		}
+	if (processed) {
+		sodium_memzero(buffer, processed);
+		sord -= processed;
+		memcpy(buffer, buffer + processed, sord);
+		processed = 0;
 	}
 
 	while (!0) {
 		if (char *const eoln = reinterpret_cast<char*>(memchr(buffer, '\n', sord))) {
 			*eoln = '\0';
+			processed = eoln + 1 - buffer;
 			return buffer;
 		}
 		const ssize_t rd = read(0, buffer + sord, sizeof(buffer) - sord);
