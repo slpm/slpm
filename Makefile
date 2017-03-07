@@ -22,7 +22,6 @@ LDFLAGS += -Wl,--relax
 LDFLAGS += -Wl,-hash-style=sysv -Wl,-hash-size=1
 LDFLAGS += -Wl,--build-id=none
 LDFLAGS += -static -nostdlib
-#LDFLAGS += -nostartfiles
 
 CPPFLAGS += -D_BSD_SOURCE -DHAVE_MMAP -DHAVE_SYS_MMAN_H
 CPPFLAGS := $(filter-out -fstack-protector,$(CPPFLAGS)) -fno-stack-protector
@@ -44,31 +43,27 @@ O += $Scrypto_pwhash/scryptsalsa208sha256/scrypt_platform.o
 
 slpm: $O
 
-#libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS := $(filter-out -Werror,$(CPPFLAGS))
 libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS += -Wno-type-limits
 
 slpm.comp: slpm.stripped
 	upx --brute --force -o$@ $<
 	touch $@
 
-%.stripped: %
+SSTRIP := elfkickers/sstrip/sstrip
+
+%.stripped: % $(SSTRIP)
 	objcopy --only-keep-debug $< $<.debug
 	objcopy $(addprefix -R ,$(STRIP_SECTIONS)) --strip-all $< $@
-	! type sstrip >/dev/null 2>&1 || sstrip -z $@
+	$(SSTRIP) -z $@
 	ls -la $@
 
+$(SSTRIP):
+	$(MAKE) -C elfkickers/sstrip
 
 .PHONY: clean
 clean:
 	rm -f $O slpm
-#	$(MAKE) -C libsodium distclean
-
-$S.libs/libsodium.a: CC := $(ORIGCC)
-$S.libs/libsodium.a:
-	cd libsodium && ./autogen.sh
-	cd libsodium && ./configure --disable-dependency-tracking --enable-minimal CPPFLAGS=-m32 LDFLAGS=-m32
-	$(MAKE) -C libsodium
-	$(MAKE) -C libsodium check
+	$(MAKE) -C elfkickers clean
 
 .PHONY: check
 check: slpm.comp
