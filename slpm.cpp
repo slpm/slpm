@@ -10,6 +10,7 @@
 #include <sys/ioctl.h>
 #include <cstring>
 #include <cassert>
+#include <sys/un.h>
 
 #define COUNT(x) (sizeof(x) / sizeof(x[0]))
 
@@ -155,13 +156,29 @@ append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
 }
 
 static void
-push_to_ssh_agent(const Ed25519SecretKey&)
+push_to_ssh_agent(const Ed25519PublicKey& pk, const Ed25519SecretKey& sk)
 {
-	Buffer<char, 256> buf;
-	buf += "TODO: push to ssh-agent listening at: ";
-	buf += getenv("SSH_AUTH_SOCK");
-	buf += '\n';
-	buf.write(STDOUT_FILENO);
+	const char* ssh_auth_sock = getenv("SSH_AUTH_SOCK");
+	Fd fd(socket(AF_UNIX, SOCK_STREAM, 0));
+	sockaddr_un sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sun_family = AF_UNIX;
+	strncpy(sa.sun_path, ssh_auth_sock, sizeof(sa.sun_path) - 1);
+	connect(fd.get(), reinterpret_cast<sockaddr*>(&sa), sizeof(sa));
+	Buffer<uint8_t, 4096> buf;
+	buf.append_network_long(0);
+	buf += '\x19'; // SSH2_AGENTC_ADD_ID_CONSTRAINED
+	buf.append_with_be32_length_prefix("ssh-ed25519");
+	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(pk.data()), pk.size());
+	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(sk.data()), sk.size());
+	buf.append_with_be32_length_prefix("comment");
+	buf += '\x01'; // SSH_AGENT_CONSTRAIN_LIFETIME
+	buf.append_network_long(86400);
+	buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
+	*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
+	buf.write(fd.get());
+	std::array<uint8_t, 4096> resp;
+	read(fd.get(), resp.data(), resp.size());
 }
 
 static void
@@ -171,7 +188,7 @@ output_site_ssh(const Seed& seed)
 	Ed25519PublicKey pk;
 	Ed25519SecretKey sk;
 	crypto_sign_ed25519_seed_keypair(pk.data(), sk.data(), seed.data());
-	push_to_ssh_agent(sk);
+	push_to_ssh_agent(pk, sk);
 	sodium_memzero(sk.data(), sk.size());
 
 	Buffer<uint8_t, 4096> buf;
