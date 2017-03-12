@@ -12,6 +12,19 @@ memchr(const void* s, int c, size_t n)
 	return 0;
 }
 
+void *
+memmove(void* dest, const void* src, size_t n)
+{
+	char* d = (char*)dest;
+	const char* s = (const char*)src;
+	if (dest < src) {
+		while (n--) *d++ = *s++;
+	} else {
+		while (n--) d[n] = s[n];
+	}
+	return dest;
+}
+
 int
 isatty(int fd)
 {
