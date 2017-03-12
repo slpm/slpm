@@ -2,15 +2,18 @@
 #include <stddef.h>
 #include <sys/types.h>
 
+// http://stackoverflow.com/a/9508738
+
 #if __i386__
 ssize_t
 write(int fd, const void* buf, size_t count)
 {
 	ssize_t result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
-		: "a" (4), "b" (fd), "c" (buf), "d" (count)
+		: "0" (4), "b" (fd), "c" (buf), "d" (count)
+		: "cc", "edi", "esi", "memory"
 	);
 	return result;
 }
@@ -19,10 +22,11 @@ ssize_t
 read(int fd, void* buf, size_t count)
 {
 	ssize_t result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
-		: "a" (3), "b" (fd), "c" (buf), "d" (count)
+		: "0" (3), "b" (fd), "c" (buf), "d" (count)
+		: "cc", "edi", "esi", "memory"
 	);
 	return result;
 }
@@ -41,11 +45,11 @@ mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset)
 {
 	struct mmap_arg_struct arg = { (uint32_t)addr, length, prot, flags, fd, offset };
 	void* result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
 		: "a" (0x5a), "b" (&arg)
-		: "memory"
+		: "cc", "ecx", "edx", "edi", "esi", "memory"
 	);
 	return result;
 }
@@ -54,10 +58,11 @@ int
 munmap(void *addr, size_t length)
 {
 	int result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
 		: "a" (0x5b), "b" (addr), "c" (length)
+		: "cc", "edx", "edi", "esi", "memory"
 	);
 	return result;
 }
@@ -66,7 +71,7 @@ void
 __attribute__ ((noreturn))
 _exit(int status)
 {
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		:
 		: "a" (1), "b" (status)
@@ -78,10 +83,11 @@ int
 open(const char* pathname, int flags, int mode)
 {
 	int result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
 		: "a" (5), "b" (pathname), "c" (flags), "d" (mode)
+		: "cc", "edi", "esi", "memory"
 	);
 	return result;
 }
@@ -90,10 +96,11 @@ int
 close(int fd)
 {
 	int result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
 		: "a" (6), "b" (fd)
+		: "cc", "ecx", "edx", "edi", "esi"
 	);
 	return result;
 }
@@ -102,10 +109,11 @@ int
 ioctl(int fd, unsigned long request, unsigned long arg)
 {
 	int result;
-	__asm__(
+	__asm__ volatile(
 		"int $0x80"
 		: "=a" (result)
 		: "a" (0x36), "b" (fd), "c" (request), "d" (arg)
+		: "cc", "edi", "esi", "memory"
 	);
 	return result;
 }
