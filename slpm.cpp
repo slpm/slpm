@@ -137,20 +137,33 @@ output_site_generic(const Seed& seed)
 
 extern "C" size_t to_base64(char *dst, size_t dst_len, const void *src, size_t src_len);
 
+using Ed25519PublicKey = std::array<uint8_t, crypto_sign_ed25519_PUBLICKEYBYTES>;
+using Ed25519SecretKey = std::array<uint8_t, crypto_sign_ed25519_SECRETKEYBYTES>;
+
+static void
+append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
+{
+	Buffer<char, 256> buf;
+	buf.append_with_be32_length_prefix("ssh-ed25519");
+	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(pk.data()), pk.size());
+
+	std::array<char, 256> base64;
+	to_base64(base64.data(), base64.size(), buf.data(), buf.size());
+
+	result += base64.data();
+}
+
 static void
 output_site_ssh(const Seed& seed)
 {
 	assert(seed.size() >= crypto_sign_ed25519_SEEDBYTES);
-	std::array<uint8_t, crypto_sign_ed25519_PUBLICKEYBYTES> pk;
-	std::array<uint8_t, crypto_sign_ed25519_SECRETKEYBYTES> sk;
+	Ed25519PublicKey pk;
+	Ed25519SecretKey sk;
 	crypto_sign_ed25519_seed_keypair(pk.data(), sk.data(), seed.data());
-
-	std::array<char, (crypto_sign_ed25519_PUBLICKEYBYTES * 4 + 2) / 3 + 1> pk_base64;
-	to_base64(pk_base64.data(), pk_base64.size(), pk.data(), pk.size());
 
 	Buffer<uint8_t, 4096> buf;
 	buf += "ssh-ed25519 ";
-	buf += pk_base64.data();
+	append(buf, pk);
 	buf += " user@localhost";
 	buf += '\n';
 	buf.write(STDOUT_FILENO);
@@ -166,7 +179,7 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 	Buffer<uint8_t, 4096> buf;
 
 	buf += iv;
-	buf.append_be32len_str(site);
+	buf.append_with_be32_length_prefix(site);
 	buf.append_network_long(counter);
 	Seed seed;
 	if (hmacsha256(seed.data(), buf.data(), buf.size(), key, keysize)) {
@@ -305,7 +318,7 @@ main(int, char* [], char* envp[])
 
 	Buffer<uint8_t, 4096> buf;
 	buf += iv;
-	buf.append_be32len_str(salt);
+	buf.append_with_be32_length_prefix(salt);
 
 	char *const pw = (isatty(STDIN_FILENO) ? mygetpass : getstring)("Passphrase: ");
 	if (!pw) {
