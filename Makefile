@@ -62,7 +62,7 @@ $(SSTRIP):
 
 .PHONY: clean
 clean:
-	rm -f $O slpm
+	rm -f $O slpm *.comp *.stripped *.debug
 	$(MAKE) -C elfkickers clean
 
 .PHONY: check
