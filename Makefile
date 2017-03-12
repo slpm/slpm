@@ -40,10 +40,17 @@ O += $Scrypto_pwhash/scryptsalsa208sha256/crypto_scrypt-common.o
 O += $Scrypto_pwhash/scryptsalsa208sha256/nosse/pwhash_scryptsalsa208sha256_nosse.o
 O += $Scrypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o
 O += $Scrypto_pwhash/scryptsalsa208sha256/scrypt_platform.o
+O += $Scrypto_sign/ed25519/ref10/keypair.o
+O += $Scrypto_hash/sha512/cp/hash_sha512.o
+O += $Scrypto_core/curve25519/ref10/curve25519_ref10.o
+O += $Scrypto_pwhash/argon2/argon2-encoding-patched.o
 
 slpm: $O
 
-libsodium/src/libsodium/crypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS += -Wno-type-limits
+$Scrypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS += -Wno-type-limits
+
+$Scrypto_pwhash/argon2/argon2-encoding-patched.c: $Scrypto_pwhash/argon2/argon2-encoding.c
+	sed -e 's/static size_t to_base64/size_t to_base64/g' $< > $@
 
 slpm.comp: slpm.stripped
 	upx --brute --force -o$@ $<
@@ -63,6 +70,7 @@ $(SSTRIP):
 .PHONY: clean
 clean:
 	rm -f $O slpm *.comp *.stripped *.debug
+	rm -f $Scrypto_pwhash/argon2/argon2-encoding-patched.c
 	$(MAKE) -C elfkickers clean
 
 .PHONY: check

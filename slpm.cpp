@@ -2,6 +2,7 @@
 
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
+#include <sodium/crypto_sign_ed25519.h>
 
 #include <fcntl.h>
 #include <termios.h>
@@ -112,6 +113,51 @@ hmacsha256(
 	return 0;
 }
 
+using Seed = std::array<uint8_t, crypto_auth_hmacsha256_BYTES>;
+
+static void
+output_site_generic(const Seed& seed)
+{
+	Buffer<uint8_t, 4096> buf;
+	for (unsigned i = 0; i != COUNT(templates); ++i) {
+		buf += templates[i].name;
+		buf += ": ";
+		const char* templat = templates[i].templat[seed[0] % templates[i].count];
+		for (unsigned j = 0; templat[j]; ++j) {
+			const char* pass_chars = lookup_pass_chars(templat[j]);
+			int len = strlen(pass_chars);
+			assert(seed.size() > 1 + j);
+			buf += pass_chars[seed[1 + j] % len];
+		}
+		buf += '\n';
+	}
+
+	buf.write(STDOUT_FILENO);
+}
+
+extern "C" size_t to_base64(char *dst, size_t dst_len, const void *src, size_t src_len);
+
+static void
+output_site_ssh(const Seed& seed)
+{
+	assert(seed.size() >= crypto_sign_ed25519_SEEDBYTES);
+	std::array<uint8_t, crypto_sign_ed25519_PUBLICKEYBYTES> pk;
+	std::array<uint8_t, crypto_sign_ed25519_SECRETKEYBYTES> sk;
+	crypto_sign_ed25519_seed_keypair(pk.data(), sk.data(), seed.data());
+
+	std::array<char, (crypto_sign_ed25519_PUBLICKEYBYTES * 4 + 2) / 3 + 1> pk_base64;
+	to_base64(pk_base64.data(), pk_base64.size(), pk.data(), pk.size());
+
+	Buffer<uint8_t, 4096> buf;
+	buf += "ssh-ed25519 ";
+	buf += pk_base64.data();
+	buf += " user@localhost";
+	buf += '\n';
+	buf.write(STDOUT_FILENO);
+	sodium_memzero(sk.data(), sk.size());
+	sodium_memzero(pk.data(), pk.size());
+}
+
 static const char iv[] = "com.lyndir.masterpassword";
 
 static void
@@ -123,28 +169,18 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 	buf.append_network_long(strlen(site));
 	buf += site;
 	buf.append_network_long(counter);
-	uint8_t seed[crypto_auth_hmacsha256_BYTES];
-	if (hmacsha256(seed, buf.data(), buf.size(), key, keysize)) {
+	Seed seed;
+	if (hmacsha256(seed.data(), buf.data(), buf.size(), key, keysize)) {
 		writes(2, "hmac fail\n");
 		return;
 	}
 
-	Buffer<uint8_t, 4096> obuf;
-	for (unsigned i = 0; i != COUNT(templates); ++i) {
-		obuf += templates[i].name;
-		obuf += ": ";
-		const char* templat = templates[i].templat[seed[0] % templates[i].count];
-		for (unsigned j = 0; templat[j]; ++j) {
-			const char* pass_chars = lookup_pass_chars(templat[j]);
-			int len = strlen(pass_chars);
-			assert(sizeof(seed) > 1 + j);
-			obuf += pass_chars[seed[1 + j] % len];
-		}
-		obuf += '\n';
+	if (!strncmp(site, "ssh ", 4)) {
+		output_site_ssh(seed);
+	} else {
+		output_site_generic(seed);
 	}
-
-	obuf.write(1);
-	sodium_memzero(seed, sizeof(seed));
+	sodium_memzero(seed.data(), seed.size());
 }
 
 static char*
