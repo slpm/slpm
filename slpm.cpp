@@ -155,16 +155,27 @@ append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
 	result += base64.data();
 }
 
-static void
+static int
 push_to_ssh_agent(const Ed25519PublicKey& pk, const Ed25519SecretKey& sk)
 {
 	const char* ssh_auth_sock = getenv("SSH_AUTH_SOCK");
+	if (!ssh_auth_sock) {
+		writes(STDERR_FILENO, "Failed to find address of ssh-agent (SSH_AUTH_SOCK)\n");
+		return -1;
+	}
 	Fd fd(socket(AF_UNIX, SOCK_STREAM, 0));
+	if (!fd.valid()) {
+		writes(STDERR_FILENO, "Failed to create socket for ssh-agent\n");
+		return -2;
+	}
 	sockaddr_un sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.sun_family = AF_UNIX;
 	strncpy(sa.sun_path, ssh_auth_sock, sizeof(sa.sun_path) - 1);
-	connect(fd.get(), reinterpret_cast<sockaddr*>(&sa), sizeof(sa));
+	if (connect(fd.get(), reinterpret_cast<sockaddr*>(&sa), sizeof(sa))) {
+		writes(STDERR_FILENO, "Failed to connect to ssh-agent\n");
+		return -3;
+	}
 	Buffer<uint8_t, 4096> buf;
 	buf.append_network_long(0);
 	buf += '\x19'; // SSH2_AGENTC_ADD_ID_CONSTRAINED
@@ -176,9 +187,14 @@ push_to_ssh_agent(const Ed25519PublicKey& pk, const Ed25519SecretKey& sk)
 	buf.append_network_long(86400);
 	buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
 	*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
-	buf.write(fd.get());
-	std::array<uint8_t, 4096> resp;
-	read(fd.get(), resp.data(), resp.size());
+	buf.write(fd.get()); // TODO: check return value
+	std::array<uint8_t, 8> resp;
+	const auto rd = read(fd.get(), resp.data(), resp.size());
+	if (rd != 5 || ntohl(*reinterpret_cast<uint32_t*>(resp.data())) != 1) {
+		writes(STDERR_FILENO, "Unexpected result size from ssh-agent\n");
+		return -4;
+	}
+	return (resp[4] == 6) ? 0 : -5;
 }
 
 static void
@@ -188,16 +204,18 @@ output_site_ssh(const Seed& seed)
 	Ed25519PublicKey pk;
 	Ed25519SecretKey sk;
 	crypto_sign_ed25519_seed_keypair(pk.data(), sk.data(), seed.data());
-	push_to_ssh_agent(pk, sk);
+	const auto error = push_to_ssh_agent(pk, sk);
 	sodium_memzero(sk.data(), sk.size());
 
-	Buffer<uint8_t, 4096> buf;
-	buf += "ssh-ed25519 ";
-	append(buf, pk);
-	buf += " user@localhost";
-	buf += '\n';
-	buf.write(STDOUT_FILENO);
-	sodium_memzero(pk.data(), pk.size());
+	if (!error) {
+		Buffer<uint8_t, 4096> buf;
+		buf += "ssh-ed25519 ";
+		append(buf, pk);
+		buf += " user@localhost";
+		buf += '\n';
+		buf.write(STDOUT_FILENO);
+		sodium_memzero(pk.data(), pk.size());
+	}
 }
 
 static const char iv[] = "com.lyndir.masterpassword";
