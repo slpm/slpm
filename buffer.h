@@ -29,15 +29,17 @@ struct Buffer {
 	}
 
 	Buffer&
-	operator+=(const char* s)
+	append(const char* s, ptrdiff_t l)
 	{
 		last_ = std::copy(
 			  s
-			, s + std::min(static_cast<ptrdiff_t>(strlen(s)), buf_.end() - last_)
+			, s + std::min(static_cast<ptrdiff_t>(l), buf_.end() - last_)
 			, last_
 		);
 		return *this;
 	}
+
+	Buffer& operator+=(const char* s) { return append(s, strlen(s)); }
 
 	Buffer&
 	append_network_long(uint32_t hl)
@@ -51,10 +53,16 @@ struct Buffer {
 	}
 
 	Buffer&
-	append_be32len_str(const char* s)
+	append_with_be32_length_prefix(const char* s)
 	{
-		append_network_long(strlen(s));
-		return operator+=(s);
+		return append_with_be32_length_prefix(s, strlen(s));
+	}
+
+	Buffer&
+	append_with_be32_length_prefix(const char* s, ptrdiff_t l)
+	{
+		append_network_long(l);
+		return append(s, l);
 	}
 
 	ssize_t write(int fd) const { return ::write(fd, data(), size()); }
