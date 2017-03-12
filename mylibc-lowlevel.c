@@ -1,17 +1,6 @@
-#include <unistd.h>
-#include <sys/mman.h>
 #include <stdint.h>
 #include <stddef.h>
-
-void*
-__memcpy_chk(void *dstpp, const void *srcpp, size_t len, size_t dstlen)
-{
-	if (dstlen < len) _exit(1);
-	char* dp = dstpp;
-	const char* sp = srcpp;
-	for (; len; --len) *dp++ = *sp++;
-	return dstpp;
-}
+#include <sys/types.h>
 
 #if __i386__
 ssize_t
@@ -122,3 +111,13 @@ ioctl(int fd, unsigned long request, unsigned long arg)
 }
 
 #endif // __i386__
+
+void*
+__memcpy_chk(void *dstpp, const void *srcpp, size_t len, size_t dstlen)
+{
+	if (dstlen < len) _exit(1);
+	char* dp = dstpp;
+	const char* sp = srcpp;
+	for (; len; --len) *dp++ = *sp++;
+	return dstpp;
+}
