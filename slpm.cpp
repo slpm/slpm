@@ -1,4 +1,5 @@
 #include "buffer.h"
+#include "fd.h"
 
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
@@ -235,19 +236,6 @@ mygetstring(const char* prompt, int infd = STDIN_FILENO, int outfd = STDOUT_FILE
 }
 
 static char* getstring(const char* prompt) { return mygetstring(prompt); }
-
-struct Fd {
-	~Fd() { if (valid()) close(fd_); }
-	Fd(int fd) : fd_(fd) {}
-	Fd(const Fd&) = delete;
-	Fd& operator=(const Fd&) = delete;
-
-	bool valid() const { return fd_ != -1; }
-	int get() const { return fd_; }
-
-private:
-	int fd_;
-};
 
 struct HiddenInput {
 	~HiddenInput()
