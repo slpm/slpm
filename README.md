@@ -20,7 +20,7 @@ We run slpm using `Edgar Allan Poe` as full name and `footman liquid vacate
 rounding compare parsnip traffic uproar freemason duckbill` as passphrase:
 
 ```
-$ wget https://github.com/LaszloAshin/slpm/releases/download/v0.2.1/slpm.comp
+$ wget https://github.com/LaszloAshin/slpm/releases/download/v0.3.0/slpm.comp
 $ chmod +x slpm.comp
 $ SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp 
 SLPM_FULLNAME='Edgar Allan Poe'
@@ -42,5 +42,10 @@ Medium Password: FopNuz7=
 Short Password: Fop6
 Basic Password: UWR6qbP5
 PIN: 8396
+Site: ssh mysite.com
+Counter: 1
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIORrGH9gdFu+/9lVT1qSfkjt2cMgLINFDsWdb9sq0saR user@localhost
 Bye!    
+$ ssh-add -l
+256 65:66:a3:43:fa:40:02:d1:7d:b8:eb:56:bb:89:2c:67 comment (ED25519)
 ```
