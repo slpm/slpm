@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h>
+#include <linux/net.h>
 
 // http://stackoverflow.com/a/9508738
 
@@ -116,6 +117,33 @@ ioctl(int fd, unsigned long request, unsigned long arg)
 		: "cc", "edi", "esi", "memory"
 	);
 	return result;
+}
+
+int
+socketcall(int call, unsigned long* args)
+{
+	int result;
+	__asm__ volatile(
+		"int $0x80"
+		: "=a" (result)
+		: "a" (0x66), "b" (call), "c" (args)
+		: "cc", "edx", "edi", "esi", "memory"
+	);
+	return result;
+}
+
+int
+socket(int domain, int type, int protocol)
+{
+	unsigned long args[] = { domain, type, protocol };
+	return socketcall(SYS_SOCKET, args);
+}
+
+int
+connect(int sockfd, const struct sockaddr *addr, size_t addrlen)
+{
+	unsigned long args[] = { sockfd, (unsigned long)addr, addrlen };
+	return socketcall(SYS_CONNECT, args);
 }
 
 #endif // __i386__
