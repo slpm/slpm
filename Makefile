@@ -33,7 +33,7 @@ STRIP_SECTIONS := \
 .PHONY: all
 all: slpm.comp
 
-O := start-Linux.o mylibc-lowlevel.o slpm.o
+O := start-Linux.o mylibc-lowlevel.o mylibc.o slpm.o
 O += $Scrypto_auth/hmacsha256/cp/hmac_hmacsha256.o
 O += $Scrypto_hash/sha256/cp/hash_sha256.o
 O += $Scrypto_pwhash/scryptsalsa208sha256/crypto_scrypt-common.o
