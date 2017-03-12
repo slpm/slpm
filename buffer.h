@@ -50,6 +50,13 @@ struct Buffer {
 		return *this;
 	}
 
+	Buffer&
+	append_be32len_str(const char* s)
+	{
+		append_network_long(strlen(s));
+		return operator+=(s);
+	}
+
 	ssize_t write(int fd) const { return ::write(fd, data(), size()); }
 
 private:

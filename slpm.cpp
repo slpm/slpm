@@ -166,8 +166,7 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 	Buffer<uint8_t, 4096> buf;
 
 	buf += iv;
-	buf.append_network_long(strlen(site));
-	buf += site;
+	buf.append_be32len_str(site);
 	buf.append_network_long(counter);
 	Seed seed;
 	if (hmacsha256(seed.data(), buf.data(), buf.size(), key, keysize)) {
@@ -306,8 +305,7 @@ main(int, char* [], char* envp[])
 
 	Buffer<uint8_t, 4096> buf;
 	buf += iv;
-	buf.append_network_long(strlen(salt));
-	buf += salt;
+	buf.append_be32len_str(salt);
 
 	char *const pw = (isatty(STDIN_FILENO) ? mygetpass : getstring)("Passphrase: ");
 	if (!pw) {
