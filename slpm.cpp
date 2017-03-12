@@ -154,12 +154,24 @@ append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
 }
 
 static void
+push_to_ssh_agent(const Ed25519SecretKey&)
+{
+	Buffer<char, 256> buf;
+	buf += "TODO: push to ssh-agent listening at: ";
+	buf += getenv("SSH_AUTH_SOCK");
+	buf += '\n';
+	buf.write(STDOUT_FILENO);
+}
+
+static void
 output_site_ssh(const Seed& seed)
 {
 	assert(seed.size() >= crypto_sign_ed25519_SEEDBYTES);
 	Ed25519PublicKey pk;
 	Ed25519SecretKey sk;
 	crypto_sign_ed25519_seed_keypair(pk.data(), sk.data(), seed.data());
+	push_to_ssh_agent(sk);
+	sodium_memzero(sk.data(), sk.size());
 
 	Buffer<uint8_t, 4096> buf;
 	buf += "ssh-ed25519 ";
@@ -167,7 +179,6 @@ output_site_ssh(const Seed& seed)
 	buf += " user@localhost";
 	buf += '\n';
 	buf.write(STDOUT_FILENO);
-	sodium_memzero(sk.data(), sk.size());
 	sodium_memzero(pk.data(), pk.size());
 }
 
@@ -290,23 +301,11 @@ sodium_memzero(void * const pnt, const size_t len)
 	while (i < len) pnt_[i++] = 0U;
 }
 
-static char*
-mygetenv(char* envp[], const char* name)
-{
-	const auto len = strlen(name);
-	for (int i = 0; envp[i]; ++i) {
-		if (!strncmp(envp[i], name, len) && envp[i][len] == '=') {
-			return envp[i] + len + 1;
-		}
-	}
-	return 0;
-}
-
-
 int
 main(int, char* [], char* envp[])
 {
-	const char* salt = mygetenv(envp, "SLPM_FULLNAME");
+	environ = envp;
+	const char* salt = getenv("SLPM_FULLNAME");
 	if (!salt) salt = "";
 	{
 		Buffer<uint8_t, 256> buf;

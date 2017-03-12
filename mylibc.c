@@ -93,3 +93,17 @@ __errno_location(void)
 	static int e = 0;
 	return &e;
 }
+
+char** environ;
+
+char*
+getenv(const char* name)
+{
+	const size_t len = strlen(name);
+	for (int i = 0; environ[i]; ++i) {
+		if (!strncmp(environ[i], name, len) && environ[i][len] == '=') {
+			return environ[i] + len + 1;
+		}
+	}
+	return 0;
+}
