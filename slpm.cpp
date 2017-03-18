@@ -11,6 +11,8 @@
 #include <cstring>
 #include <cassert>
 #include <sys/un.h>
+#include <experimental/optional>
+#include <algorithm>
 
 #define COUNT(x) (sizeof(x) / sizeof(x[0]))
 
@@ -142,6 +144,11 @@ extern "C" size_t to_base64(char *dst, size_t dst_len, const void *src, size_t s
 using Ed25519PublicKey = std::array<uint8_t, crypto_sign_ed25519_PUBLICKEYBYTES>;
 using Ed25519SecretKey = std::array<uint8_t, crypto_sign_ed25519_SECRETKEYBYTES>;
 
+struct Ed25519KeyPair {
+	Ed25519PublicKey pub;
+	Ed25519SecretKey sec;
+};
+
 static void
 append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
 {
@@ -155,73 +162,127 @@ append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
 	result += base64.data();
 }
 
-static int
-push_to_ssh_agent(const Ed25519PublicKey& pk, const Ed25519SecretKey& sk)
-{
-	const char* ssh_auth_sock = getenv("SSH_AUTH_SOCK");
-	if (!ssh_auth_sock) {
-		writes(STDERR_FILENO, "Failed to find address of ssh-agent (SSH_AUTH_SOCK)\n");
-		return -1;
+struct SshAgent {
+	~SshAgent()
+	{
+		if (!valid_) return;
+		std::for_each(keys_.begin(), keys_.end(), [this](auto& k){ if (k) this->remove(*k); });
 	}
-	Fd fd(socket(AF_UNIX, SOCK_STREAM, 0));
-	if (!fd.valid()) {
-		writes(STDERR_FILENO, "Failed to create socket for ssh-agent\n");
-		return -2;
+
+	SshAgent()
+	: fd_(socket(AF_UNIX, SOCK_STREAM, 0))
+	{
+		if (!fd_.valid()) {
+			writes(STDERR_FILENO, "Failed to create socket for ssh-agent\n");
+			return;
+		}
+		const char* ssh_auth_sock = getenv("SSH_AUTH_SOCK");
+		if (!ssh_auth_sock) {
+			writes(STDERR_FILENO, "Failed to find address of ssh-agent (SSH_AUTH_SOCK)\n");
+			return;
+		}
+		sockaddr_un sa;
+		memset(&sa, 0, sizeof(sa));
+		sa.sun_family = AF_UNIX;
+		strncpy(sa.sun_path, ssh_auth_sock, sizeof(sa.sun_path) - 1);
+		if (connect(fd_.get(), reinterpret_cast<sockaddr*>(&sa), sizeof(sa))) {
+			writes(STDERR_FILENO, "Failed to connect to ssh-agent\n");
+			return;
+		}
+		valid_ = true;
 	}
-	sockaddr_un sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sun_family = AF_UNIX;
-	strncpy(sa.sun_path, ssh_auth_sock, sizeof(sa.sun_path) - 1);
-	if (connect(fd.get(), reinterpret_cast<sockaddr*>(&sa), sizeof(sa))) {
-		writes(STDERR_FILENO, "Failed to connect to ssh-agent\n");
-		return -3;
+
+	SshAgent(const SshAgent&) = delete;
+	SshAgent& operator=(const SshAgent&) = delete;
+
+	int
+	add(const Ed25519KeyPair& k)
+	{
+		if (!valid_) return -1;
+		Buffer<uint8_t, 4096> buf;
+		buf.append_network_long(0);
+		buf += '\x19'; // SSH2_AGENTC_ADD_ID_CONSTRAINED
+		buf.append_with_be32_length_prefix("ssh-ed25519");
+		buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(k.pub.data()), k.pub.size());
+		buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(k.sec.data()), k.sec.size());
+		buf.append_with_be32_length_prefix("comment");
+		buf += '\x01'; // SSH_AGENT_CONSTRAIN_LIFETIME
+		buf.append_network_long(86400);
+		buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
+		*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
+		buf.write(fd_.get()); // TODO: check return value
+		std::array<uint8_t, 8> resp;
+		const auto rd = read(fd_.get(), resp.data(), resp.size());
+		if (rd != 5 || ntohl(*reinterpret_cast<uint32_t*>(resp.data())) != 1) {
+			writes(STDERR_FILENO, "Unexpected result size from ssh-agent\n");
+			return -2;
+		}
+		if (keys_[n_]) remove(*keys_[n_]);
+		keys_[n_] = k.pub;
+		n_ = (n_ + 1) % keys_.size();
+		return (resp[4] == 6) ? 0 : -3;
 	}
-	Buffer<uint8_t, 4096> buf;
-	buf.append_network_long(0);
-	buf += '\x19'; // SSH2_AGENTC_ADD_ID_CONSTRAINED
-	buf.append_with_be32_length_prefix("ssh-ed25519");
-	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(pk.data()), pk.size());
-	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(sk.data()), sk.size());
-	buf.append_with_be32_length_prefix("comment");
-	buf += '\x01'; // SSH_AGENT_CONSTRAIN_LIFETIME
-	buf.append_network_long(86400);
-	buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
-	*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
-	buf.write(fd.get()); // TODO: check return value
-	std::array<uint8_t, 8> resp;
-	const auto rd = read(fd.get(), resp.data(), resp.size());
-	if (rd != 5 || ntohl(*reinterpret_cast<uint32_t*>(resp.data())) != 1) {
-		writes(STDERR_FILENO, "Unexpected result size from ssh-agent\n");
-		return -4;
+
+private:
+	using Key = Ed25519PublicKey;
+	using OptKey = std::experimental::optional<Key>;
+	using Keys = std::array<OptKey, 8>;
+
+	int
+	remove(const Ed25519PublicKey& pk)
+	{
+		if (!valid_) return -1;
+		Buffer<uint8_t, 4096> buf;
+		buf.append_network_long(0);
+		buf += '\x12'; // SSH2_AGENTC_REMOVE_IDENTITY
+		buf.append_network_long(0x33);
+		buf.append_with_be32_length_prefix("ssh-ed25519");
+		buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(pk.data()), pk.size());
+		*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
+		buf.write(fd_.get()); // TODO: check return value
+		std::array<uint8_t, 8> resp;
+		const auto rd2 = read(fd_.get(), resp.data(), resp.size());
+		if (rd2 != 5 || ntohl(*reinterpret_cast<uint32_t*>(resp.data())) != 1) {
+			writes(STDERR_FILENO, "Unexpected result size from ssh-agent at removing key\n");
+			return -2;
+		}
+		return (resp[4] == 6) ? 0 : -3;
 	}
-	return (resp[4] == 6) ? 0 : -5;
-}
+
+	Fd fd_;
+	Keys keys_;
+	bool valid_{};
+	int n_{};
+};
+
+// TODO: remove keys from ssh-agent when exiting slpm
+// TODO: fill in comment field properly
+// TODO: fill in user@localhost properly
 
 static void
-output_site_ssh(const Seed& seed)
+output_site_ssh(SshAgent& sa, const Seed& seed)
 {
 	assert(seed.size() >= crypto_sign_ed25519_SEEDBYTES);
-	Ed25519PublicKey pk;
-	Ed25519SecretKey sk;
-	crypto_sign_ed25519_seed_keypair(pk.data(), sk.data(), seed.data());
-	const auto error = push_to_ssh_agent(pk, sk);
-	sodium_memzero(sk.data(), sk.size());
+	Ed25519KeyPair k;
+	crypto_sign_ed25519_seed_keypair(k.pub.data(), k.sec.data(), seed.data());
+	const auto error = sa.add(k);
+	sodium_memzero(k.sec.data(), k.sec.size());
 
 	if (!error) {
 		Buffer<uint8_t, 4096> buf;
 		buf += "ssh-ed25519 ";
-		append(buf, pk);
+		append(buf, k.pub);
 		buf += " user@localhost";
 		buf += '\n';
 		buf.write(STDOUT_FILENO);
-		sodium_memzero(pk.data(), pk.size());
 	}
+	sodium_memzero(k.pub.data(), k.pub.size());
 }
 
 static const char iv[] = "com.lyndir.masterpassword";
 
 static void
-write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, int counter)
+write_passwords_for_site(SshAgent& sa, const uint8_t* key, size_t keysize, const char* site, int counter)
 {
 	Buffer<uint8_t, 4096> buf;
 
@@ -235,7 +296,7 @@ write_passwords_for_site(const uint8_t* key, size_t keysize, const char* site, i
 	}
 
 	if (!strncmp(site, "ssh ", 4)) {
-		output_site_ssh(seed);
+		output_site_ssh(sa, seed);
 	} else {
 		output_site_generic(seed);
 	}
@@ -367,6 +428,7 @@ main(int, char* [], char* envp[])
 	sodium_memzero(pw, strlen(pw));
 
 	writes(1, "\rKey derivation complete.\n");
+	SshAgent sa;
 	while (!0) {
 		char site[256];
 		const char* s = getstring("Site: ");
@@ -374,7 +436,7 @@ main(int, char* [], char* envp[])
 		strncpy(site, s, sizeof(site) - 1);
 		const char* c = getstring("Counter: ");
 		if (!c) break;
-		write_passwords_for_site(key, sizeof(key), site, atoi(c));
+		write_passwords_for_site(sa, key, sizeof(key), site, atoi(c));
 	}
 
 	sodium_memzero(key, sizeof(key));

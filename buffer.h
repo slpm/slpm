@@ -67,6 +67,8 @@ struct Buffer {
 
 	ssize_t write(int fd) const { return ::write(fd, data(), size()); }
 
+	void clear() { last_ = buf_.begin(); }
+
 private:
 	using Buf = std::array<T, S>;
 
