@@ -10,8 +10,8 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
-    - gcc-multilib
-    - g++-multilib
+    - gcc-4.9-multilib
+    - g++-4.9-multilib
     - libc6-dev-i386
     - upx
 
