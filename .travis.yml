@@ -10,7 +10,7 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
-    - gcc-4.9-multilib
+    - gcc-multilib
     - g++-4.9-multilib
     - upx
 
