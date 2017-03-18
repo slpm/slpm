@@ -12,7 +12,6 @@ addons:
     - g++-4.9
     - gcc-4.9-multilib
     - g++-4.9-multilib
-    - libc6-dev-i386
     - upx
 
 script:
