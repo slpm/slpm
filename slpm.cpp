@@ -1,21 +1,16 @@
+#include "ssh-agent.h"
 #include "buffer.h"
 #include "fd.h"
 #include "utils.h"
 
 #include <sodium/crypto_auth_hmacsha256.h>
 #include <sodium/crypto_pwhash_scryptsalsa208sha256.h>
-#include <sodium/crypto_sign_ed25519.h>
 
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
 #include <cstring>
 #include <cassert>
-#include <sys/un.h>
-#include <experimental/optional>
-#include <algorithm>
-
-#include "ssh-agent.h" // TODO: move up
 
 #define COUNT(x) (sizeof(x) / sizeof(x[0]))
 
