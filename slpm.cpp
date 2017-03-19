@@ -163,8 +163,7 @@ output_site_ssh(SshAgent& sa, const Seed& seed, const char* site)
 		buf += ' ';
 		append(buf, k.pub);
 		buf += ' ';
-		const auto* user = getenv("USER");
-		buf += user ? user : "user";
+		buf += getenv_or("USER", "user");
 		buf += '@';
 		buf += "slpm+";
 		buf += site;
@@ -300,8 +299,7 @@ int
 main(int, char* [], char* envp[])
 {
 	environ = envp;
-	const char* salt = getenv("SLPM_FULLNAME");
-	if (!salt) salt = "";
+	const char *const salt = getenv_or("SLPM_FULLNAME", "");
 	{
 		Buffer<uint8_t, 256> buf;
 		buf += "SLPM_FULLNAME='";
