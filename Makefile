@@ -34,7 +34,7 @@ STRIP_SECTIONS := \
 all: slpm.comp
 
 O := start-Linux.o mylibc-lowlevel.o mylibc.o slpm.o utils.o ssh-agent.o
-O += sodium-utils.o
+O += sodium-utils.o mpw.o
 O += $Scrypto_auth/hmacsha256/cp/hmac_hmacsha256.o
 O += $Scrypto_hash/sha256/cp/hash_sha256.o
 O += $Scrypto_pwhash/scryptsalsa208sha256/crypto_scrypt-common.o
