@@ -3,3 +3,4 @@ slpm
 *.comp
 *.stripped
 *.debug
+*.sizes
