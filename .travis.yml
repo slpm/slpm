@@ -13,6 +13,7 @@ addons:
     - gcc-multilib
     - g++-4.9-multilib
     - upx
+    - openssh-client
 
 script:
 - export CC=gcc-4.9 CXX=g++-4.9
