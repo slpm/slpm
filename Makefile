@@ -60,6 +60,8 @@ slpm.comp: slpm.stripped
 SSTRIP := elfkickers/sstrip/sstrip
 
 %.stripped: % $(SSTRIP)
+	nm --defined-only --format=posix --size-sort --reverse-sort $< | \
+		sed -e 's/[0-9a-f]\+ \([0-9a-f]\+\)$$/\1/g' | c++filt | uniq -c | tee $<.sizes
 	objcopy --only-keep-debug $< $<.debug
 	objcopy $(addprefix -R ,$(STRIP_SECTIONS)) --strip-all $< $@
 	$(SSTRIP) -z $@
@@ -70,7 +72,7 @@ $(SSTRIP):
 
 .PHONY: clean
 clean:
-	rm -f $O slpm *.comp *.stripped *.debug
+	rm -f $O slpm *.comp *.stripped *.debug *.sizes
 	rm -f $Scrypto_pwhash/argon2/argon2-encoding-patched.c
 	$(MAKE) -C elfkickers clean
 
