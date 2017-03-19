@@ -190,13 +190,13 @@ struct SshAgent {
 	SshAgent& operator=(const SshAgent&) = delete;
 
 	int
-	add(const Ed25519KeyPair& k)
+	add(const Ed25519KeyPair& k, const char* comment)
 	{
 		if (exists(k.pub)) {
 			writes(STDERR_FILENO, "Key was already in agent\n");
 			return 0;
 		}
-		Entry e(fd_, k);
+		Entry e(fd_, k, comment);
 		if (e.error()) return e.error();
 		auto& item = entries_[n_];
 		if (item) {
@@ -233,7 +233,7 @@ private:
 			}
 		}
 
-		Entry(Fd& fd, const Ed25519KeyPair& k)
+		Entry(Fd& fd, const Ed25519KeyPair& k, const char* comment)
 		: fd_(&fd)
 		, pk_(k.pub)
 		{
@@ -244,9 +244,7 @@ private:
 			buf.append_with_be32_length_prefix("ssh-ed25519");
 			buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(k.pub.data()), k.pub.size());
 			buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(k.sec.data()), k.sec.size());
-			buf.append_with_be32_length_prefix("comment");
-			buf += '\x01'; // SSH_AGENT_CONSTRAIN_LIFETIME
-			buf.append_network_long(86400);
+			buf.append_with_be32_length_prefix(comment);
 			buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
 			*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
 			buf.write(fd_->get()); // TODO: check return value
@@ -316,23 +314,30 @@ private:
 	int n_{};
 };
 
-// TODO: fill in comment field properly
-// TODO: fill in user@localhost properly
-
 static void
-output_site_ssh(SshAgent& sa, const Seed& seed)
+output_site_ssh(SshAgent& sa, const Seed& seed, const char* site)
 {
 	assert(seed.size() >= crypto_sign_ed25519_SEEDBYTES);
 	Ed25519KeyPair k;
 	crypto_sign_ed25519_seed_keypair(k.pub.data(), k.sec.data(), seed.data());
-	const auto error = sa.add(k);
+	Buffer<char, 256> comment;
+	comment += "slpm+";
+	comment += site;
+	comment += '\0';
+	const auto error = sa.add(k, comment.data());
 	sodium_memzero(k.sec.data(), k.sec.size());
 
 	if (!error) {
 		Buffer<uint8_t, 4096> buf;
-		buf += "ssh-ed25519 ";
+		buf += "ssh-ed25519";
+		buf += ' ';
 		append(buf, k.pub);
-		buf += " user@localhost";
+		buf += ' ';
+		const auto* user = getenv("USER");
+		buf += user ? user : "user";
+		buf += '@';
+		buf += "slpm+";
+		buf += site;
 		buf += '\n';
 		buf.write(STDOUT_FILENO);
 	}
@@ -344,6 +349,8 @@ static const char iv[] = "com.lyndir.masterpassword";
 static void
 write_passwords_for_site(SshAgent& sa, const uint8_t* key, size_t keysize, const char* site, int counter)
 {
+	const auto is_ssh = !strncmp(site, "ssh ", 4);
+	if (is_ssh) site += 4;
 	Buffer<uint8_t, 4096> buf;
 
 	buf += iv;
@@ -355,8 +362,8 @@ write_passwords_for_site(SshAgent& sa, const uint8_t* key, size_t keysize, const
 		return;
 	}
 
-	if (!strncmp(site, "ssh ", 4)) {
-		output_site_ssh(sa, seed);
+	if (is_ssh) {
+		output_site_ssh(sa, seed, site);
 	} else {
 		output_site_generic(seed);
 	}
