@@ -20,11 +20,14 @@ We run slpm using `Edgar Allan Poe` as full name and `footman liquid vacate
 rounding compare parsnip traffic uproar freemason duckbill` as passphrase:
 
 ```
-$ wget https://github.com/LaszloAshin/slpm/releases/download/v0.3.0/slpm.comp
+$ wget https://github.com/LaszloAshin/slpm/releases/download/v0.3.1/slpm.comp
 $ chmod +x slpm.comp
-$ SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp 
+$ ssh-agent bash --norc
+bash-4.3$ ssh-add -l
+The agent has no identities.
+bash-4.3$ SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp
 SLPM_FULLNAME='Edgar Allan Poe'
-Password: 
+Passphrase: 
 Key derivation complete.
 Site: twitter.com
 Counter: 1
@@ -44,8 +47,18 @@ Basic Password: UWR6qbP5
 PIN: 8396
 Site: ssh mysite.com
 Counter: 1
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIORrGH9gdFu+/9lVT1qSfkjt2cMgLINFDsWdb9sq0saR user@localhost
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPC5/uQ+oWoHbHS2NM/y5LXJUp9vMKK6+TJt9x2h3SWW eapoe@slpm+mysite.com
+Site: ^Z
+[1]+  Stopped                 SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp
+bash-4.3$ ssh-add -l
+256 0f:4c:2d:a0:b0:8e:b0:e0:2c:64:0e:63:ce:72:14:1f slpm+mysite.com (ED25519)
+bash-4.3$ fg
+SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp
+^D
 Bye!    
-$ ssh-add -l
-256 65:66:a3:43:fa:40:02:d1:7d:b8:eb:56:bb:89:2c:67 comment (ED25519)
+bash-4.3$ ssh-add -l
+The agent has no identities.
+bash-4.3$ exit
+exit
+$ 
 ```
