@@ -4,3 +4,6 @@
 [submodule "elfkickers"]
 	path = elfkickers
 	url = ../../BR903/ELFkickers.git
+[submodule "tweetnacl"]
+	path = tweetnacl
+	url = ../../rongarret/tweetnacl.git
