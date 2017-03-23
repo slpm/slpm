@@ -33,8 +33,17 @@ STRIP_SECTIONS := \
 .PHONY: all
 all: slpm.comp
 
-O := start-Linux.o mylibc-lowlevel.o mylibc.o slpm.o utils.o ssh-agent.o
-O += sodium-utils.o mpw.o
+SRC := \
+	start-Linux.o \
+	mylibc-lowlevel.o \
+	mylibc.o \
+	slpm.o \
+	utils.o \
+	ssh-agent.o \
+	sodium-utils.o \
+	mpw.o
+
+O := $(addprefix src/,$(SRC))
 O += $Scrypto_auth/hmacsha256/cp/hmac_hmacsha256.o
 O += $Scrypto_hash/sha256/cp/hash_sha256.o
 O += $Scrypto_pwhash/scryptsalsa208sha256/crypto_scrypt-common.o
@@ -46,7 +55,7 @@ O += $Scrypto_hash/sha512/cp/hash_sha512.o
 O += $Scrypto_core/curve25519/ref10/curve25519_ref10.o
 O += $Scrypto_pwhash/argon2/argon2-encoding-patched.o
 
-slpm: $O
+src/slpm: $O
 
 $Scrypto_pwhash/scryptsalsa208sha256/pbkdf2-sha256.o: CPPFLAGS += -Wno-type-limits
 
@@ -59,7 +68,7 @@ slpm.comp: slpm.stripped
 
 SSTRIP := elfkickers/sstrip/sstrip
 
-%.stripped: % $(SSTRIP)
+%.stripped: src/% $(SSTRIP)
 	nm --defined-only --format=posix --size-sort --reverse-sort $< | \
 		sed -e 's/[0-9a-f]\+ \([0-9a-f]\+\)$$/\1/g' | c++filt | uniq -c | tee $<.sizes
 	objcopy --only-keep-debug $< $<.debug
