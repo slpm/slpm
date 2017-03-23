@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <cassert>
+#include <signal.h>
 
 static int
 hmacsha256(
@@ -91,10 +92,21 @@ write_passwords_for_site(SshAgent& sa, const uint8_t* key, size_t keysize, const
 	sodium_memzero(seed.data(), seed.size());
 }
 
+static volatile bool quit = false;
+
+static void
+quithandler(int)
+{
+	quit = true;
+}
+
 int
 main(int, char* [], char* envp[])
 {
 	environ = envp;
+	signal(SIGINT, quithandler);
+	signal(SIGQUIT, quithandler);
+	signal(SIGTERM, quithandler);
 	const char *const salt = getenv_or("SLPM_FULLNAME", "");
 	{
 		Buffer<uint8_t, 256> buf;
@@ -134,13 +146,13 @@ main(int, char* [], char* envp[])
 
 	writes(1, "\rKey derivation complete.\n");
 	SshAgent sa;
-	while (!0) {
+	while (true) {
 		char site[256];
 		const char* s = getstring("Site: ");
-		if (!s) break;
+		if (!s || quit) break;
 		strncpy(site, s, sizeof(site) - 1);
 		const char* c = getstring("Counter: ");
-		if (!c) break;
+		if (!c || quit) break;
 		write_passwords_for_site(sa, key, sizeof(key), site, atoi(c));
 	}
 

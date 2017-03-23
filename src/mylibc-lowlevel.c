@@ -146,6 +146,21 @@ connect(int sockfd, const struct sockaddr *addr, size_t addrlen)
 	return socketcall(SYS_CONNECT, args);
 }
 
+typedef void (*sighandler_t)(int);
+
+sighandler_t
+signal(int signum, sighandler_t handler)
+{
+	sighandler_t result;
+	__asm__ volatile(
+		"int $0x80"
+		: "=a" (result)
+		: "a" (0x30), "b" (signum), "c" (handler)
+		: "cc", "edx", "edi", "esi", "memory"
+	);
+	return result;
+}
+
 #endif // __i386__
 
 void*
