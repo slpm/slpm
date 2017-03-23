@@ -3,9 +3,19 @@
 [![Build Status](https://travis-ci.org/Kodest/slpm.svg?branch=master)](https://travis-ci.org/Kodest/slpm)
 
 `slpm` is a dead simple password manager that will never store anything on disk
-nor use any random source as it derives every password from your full name (as
-salt) and your passphrase. Therefore your passphrase should be [strong
-enough][diceware]! `slpm` currently uses the [MasterPasswordApp
+nor use any random source as it derives every password from:
+
+1. your full name (as salt),
+1. your passphrase,
+1. a site name, and
+1. a site counter.
+
+Therefore your passphrase should be [strong
+enough][diceware]!
+
+![The process](process.png)
+
+`slpm` currently uses the [MasterPasswordApp
 algorithm][mpwalgo] but it will default to [Argon2][] KDF and [blake2b][] secure
 hash in the future.
 
