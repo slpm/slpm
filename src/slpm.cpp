@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cassert>
 #include <signal.h>
+#include <algorithm>
 
 static int
 hmacsha256(
@@ -37,12 +38,15 @@ append(Buffer<uint8_t, 4096>& result, const Ed25519PublicKey& pk)
 	result += base64.data();
 }
 
+extern "C" int crypto_sign_keypair_from_seed(uint8_t *pk, uint8_t *sk);
+
 static void
 output_site_ssh(SshAgent& sa, const Seed& seed, const char* site)
 {
 	assert(seed.size() >= crypto_sign_ed25519_SEEDBYTES);
 	Ed25519KeyPair k;
-	crypto_sign_ed25519_seed_keypair(k.pub.data(), k.sec.data(), seed.data());
+	std::copy_n(seed.begin(), seed.size(), k.sec.begin());
+	crypto_sign_keypair_from_seed(k.pub.data(), k.sec.data());
 	Buffer<char, 256> comment;
 	comment += "slpm+";
 	comment += site;
