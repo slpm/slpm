@@ -61,7 +61,7 @@ $Scrypto_pwhash/argon2/argon2-encoding-patched.c: $Scrypto_pwhash/argon2/argon2-
 	sed -e 's/static size_t to_base64/size_t to_base64/g' $< > $@
 
 slpm.comp: slpm.stripped
-	upx --brute --force -o$@ $<
+	upx --ultra-brute --force -o$@ $<
 	touch $@
 
 SSTRIP := elfkickers/sstrip/sstrip
