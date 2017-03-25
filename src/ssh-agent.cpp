@@ -86,7 +86,9 @@ SshAgent::Entry::Entry(Fd& fd, const Ed25519KeyPair& k, const char* comment)
 	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(k.pub.data()), k.pub.size());
 	buf.append_with_be32_length_prefix(reinterpret_cast<const char*>(k.sec.data()), k.sec.size());
 	buf.append_with_be32_length_prefix(comment);
-	buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
+	if (!access("/usr/bin/ssh-askpass", F_OK)) {
+		buf += '\x02'; // SSH_AGENT_CONSTRAIN_CONFIRM
+	}
 	*reinterpret_cast<uint32_t*>(buf.data()) = htonl(buf.size() - 4);
 	buf.write(fd_->get()); // TODO: check return value
 	std::array<uint8_t, 8> resp;
