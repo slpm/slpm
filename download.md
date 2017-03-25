@@ -34,6 +34,5 @@ $
 
 ## Releases
 
-{% for r in site.github.releases %}
-  * [{{ r.name }}]({{ r.html_url }})
-{% endfor %}
+{% assign latest_release = site.github.releases.first %}
+Latest release: {{ latest_release.tag_name }}
