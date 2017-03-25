@@ -4,3 +4,5 @@ slpm
 *.stripped
 *.debug
 *.sizes
+*.sign
+*SUMS

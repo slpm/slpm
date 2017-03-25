@@ -31,8 +31,22 @@ STRIP_SECTIONS := \
 	.note* \
 	.comment*
 
+SUMS := SHA256SUMS SHA512SUMS
+
 .PHONY: all
-all: slpm.comp
+all: $(SUMS)
+
+SHA256SUMS: slpm.comp
+	sha256sum -b $^ | tee $@
+
+SHA512SUMS: slpm.comp
+	sha512sum -b $^ | tee $@
+
+.PHONY: all-sign
+all-sign: $(SUMS:%=%.sign)
+
+%.sign: %
+	gpg2 -b --armor $(OUTPUT_OPTION) $<
 
 SRC := \
 	start-Linux.o \
@@ -62,7 +76,7 @@ $Scrypto_pwhash/argon2/argon2-encoding-patched.c: $Scrypto_pwhash/argon2/argon2-
 	sed -e 's/static size_t to_base64/size_t to_base64/g' $< > $@
 
 slpm.comp: slpm.stripped
-	upx --ultra-brute --force -o$@ $<
+	upx --ultra-brute --force $(OUTPUT_OPTION) $<
 	touch $@
 
 SSTRIP := elfkickers/sstrip/sstrip
@@ -80,7 +94,7 @@ $(SSTRIP):
 
 .PHONY: clean
 clean:
-	rm -f $O slpm *.comp *.stripped *.debug *.sizes
+	rm -f $O slpm *.comp *.stripped *.debug *.sizes *SUMS *.sign
 	rm -f $Scrypto_pwhash/argon2/argon2-encoding-patched.c
 	$(MAKE) -C elfkickers clean
 
