@@ -36,5 +36,10 @@ $
 
 {% assign latest_release = site.github.releases.first %}
 Latest release: {{ latest_release.tag_name }}
+
+{% for a in latest_release.assets %}
+  * [{{ a.name }}]({{ a.browser_download_url }})
+{% endfor %}
+
 {% assign binary = latest_release.assets | where: "name", "slpm.comp" %}
 Download: [slpm.comp]({{ binary.browser_download_url }}) (size: {{ binary.size }})
