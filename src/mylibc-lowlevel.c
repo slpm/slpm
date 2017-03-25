@@ -161,6 +161,19 @@ signal(int signum, sighandler_t handler)
 	return result;
 }
 
+int
+access(const char* pathname, int mode)
+{
+	int result;
+	__asm__ volatile(
+		"int $0x80"
+		: "=a" (result)
+		: "a" (0x21), "b" (pathname), "c" (mode)
+		: "cc", "edx", "edi", "esi", "memory"
+	);
+	return result;
+}
+
 #endif // __i386__
 
 void*
