@@ -1,6 +1,6 @@
 ## Stateless Password Manager
 
-[![Build Status](https://travis-ci.org/Kodest/slpm.svg?branch=master)](https://travis-ci.org/Kodest/slpm)
+[![Build Status](https://travis-ci.org/slpm/slpm.svg?branch=master)](https://travis-ci.org/slpm/slpm)
 
 `slpm` is a dead simple password manager that will never store anything on disk
 nor use any random source as it derives every password from:
@@ -30,7 +30,7 @@ We run slpm using `Edgar Allan Poe` as full name and `footman liquid vacate
 rounding compare parsnip traffic uproar freemason duckbill` as passphrase:
 
 ```
-$ wget https://github.com/Kodest/slpm/releases/download/v0.3.1/slpm.comp
+$ wget https://github.com/slpm/slpm/releases/download/v0.3.1/slpm.comp
 $ chmod +x slpm.comp
 $ ssh-agent bash --norc
 bash-4.3$ ssh-add -l
