@@ -5,16 +5,14 @@
 {% assign binary = binaries.first %}
 {% assign sums = latest.assets | where: "name", "SHA512SUMS" %}
 {% assign sum = sums.first %}
-{% assign sigs = latest.assets | where: "name", "SHA512SUMS.sign" %}
-{% assign sig = sigs.first %}
 
-The latest stable version of slpm is [{{ latest.tag_name }}][binary]
+The latest stable version of slpm is [{{ latest.tag_name }}][binary].
 Authenticity of slpm SHOULD be verified every time after the file is downloaded
 using [the checksum file][sum] and [its signature][sig].
 
 [binary]: {{ binary.browser_download_url }}
 [sum]: {{ sum.browser_download_url }}
-[sig]: {{ sig.browser_download_url }}
+[sig]: {{ sum.browser_download_url }}.sign
 
 The signature is made by László ÁSHIN with the following fingerprint:
 
@@ -24,8 +22,9 @@ Steps to verify:
 
 ```
 $ wget -q {{ binary.browser_download_url }}
+$ stat -c %s slpm.comp
+{{ binary.size }}
 $ wget -q {{ sum.browser_download_url }}
-$ wget -q {{ sig.browser_download_url }}
 $ sha512sum -c SHA512SUMS
 slpm.comp: OK
 $ gpg --recv-keys 35BA1675CD4AAD15
@@ -33,6 +32,7 @@ gpg: requesting key CD4AAD15 from hkp server pgp.mit.edu
 gpg: key CD4AAD15: public key "László ÁSHIN <laszlo@ashin.hu>" imported
 gpg: Total number processed: 1
 gpg:               imported: 1  (RSA: 1)
+$ wget -q {{ sum.browser_download_url }}.sign
 $ gpg --verify SHA512SUMS.sign
 gpg: assuming signed data in `SHA512SUMS'
 gpg: Signature made Sat 25 Mar 2017 10:47:42 AM CET using RSA key ID CD4AAD15
