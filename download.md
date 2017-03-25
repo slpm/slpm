@@ -1,11 +1,11 @@
 ## Download
 
 {% assign latest = site.github.releases.first %}
-{% assign binaries = latest_release.assets | where: "name", "slpm.comp" %}
+{% assign binaries = latest.assets | where: "name", "slpm.comp" %}
 {% assign binary = binaries.first %}
-{% assign sums = latest_release.assets | where: "name", "SHA512SUMS" %}
+{% assign sums = latest.assets | where: "name", "SHA512SUMS" %}
 {% assign sum = sums.first %}
-{% assign sigs = latest_release.assets | where: "name", "SHA512SUMS.sign" %}
+{% assign sigs = latest.assets | where: "name", "SHA512SUMS.sign" %}
 {% assign sig = sigs.first %}
 
 The latest stable version of slpm is [{{ latest.tag_name }}][binary]
