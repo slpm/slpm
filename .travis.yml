@@ -24,7 +24,10 @@ deploy:
   provider: releases
   api_key:
     secure: fMF4whNoylwgB5pmnDMCgtSGm8Wq9Ov3zqdHNNyB/SLVOf45/zHhyjhepyQQTVDRvJIQZNczruYSfUPzNfPq1dtYoRjy3tLoqTF7vwk5pjU6uv4JIX+Q3AmmxvV4vjJDj5IT4xezuPHgjjgYtjGotg/D3ofPFSvyTzUcTea23m/diJND79mDzrOFj/lRnR3DDNmSwDuGZe7elBCMV8yMq+caMMaTHPRfUMVKeAblVsX1bzmVOUsrM7YjPB6UUahQs123piQMx/GR+piSnQ0Sb1HdfQR9+jRFKBmZXzs799KaL8LUCZf5lwVwLb17wtyvBYOTJnqUxJDM/SVDf+bC/A16HhFQCUGpWBz1UUHGv5PbT3aN0ePH4v+y3OJez7CIV5UCN/rWMBBO3hFSm9LrWm0lVdmXsoHXzNxlxHurQ6KfqNqDVp6j+q7xdbrsexZQME3vitcszabH/rBvTPA+ssmJo0och89rdZUtbWqbQH6ts/bhaCiR8oPYQE14ukokGg6HrGAacEC+UN/KzNQtl+j4b4Bj4I/dGpkgAQRvbgLQ5SKsvq/6VKhaaXvd3h1FmRroG4FzCfwFGsXZA6p0ygHK8/Bt4K7HjPwP3L1EUvLYmjKZW2CQn4TADGYlthZ2QqIsXXgd8j8/c30lrkPEJblrkAjhB65eOUHNCdb5hFI=
-  file: slpm.comp
+  file:
+  - slpm.comp
+  - SHA256SUMS
+  - SHA512SUMS
   skip_cleanup: true
   on:
     tags: true
