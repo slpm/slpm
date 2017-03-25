@@ -1,8 +1,20 @@
-## Download slpm
+## Download
 
-The latest stable version of slpm is available as [slpm.comp](slpm.comp).
+{% assign latest = site.github.releases.first %}
+{% assign binaries = latest_release.assets | where: "name", "slpm.comp" %}
+{% assign binary = binaries.first %}
+{% assign sums = latest_release.assets | where: "name", "SHA512SUMS" %}
+{% assign sum = sums.first %}
+{% assign sigs = latest_release.assets | where: "name", "SHA512SUMS.sign" %}
+{% assign sig = sigs.first %}
+
+The latest stable version of slpm is [{{ latest.tag_name }}][binary]
 Authenticity of slpm SHOULD be verified every time after the file is downloaded
-using [the checksum file](SHA512SUMS) and [its signature](SHA512SUMS.sign).
+using [the checksum file][sum] and [its signature][sig].
+
+[binary]: {{ binary.browser_download_url }}
+[sum]: {{ sum.browser_download_url }}
+[sig]: {{ sig.browser_download_url }}
 
 The signature is made by László ÁSHIN with the following fingerprint:
 
@@ -11,7 +23,9 @@ The signature is made by László ÁSHIN with the following fingerprint:
 Steps to verify:
 
 ```
-$ wget -q https://slpm.github.io/{slpm.comp,SHA512SUMS,SHA512SUMS.sign}
+$ wget -q {{ binary.browser_download_url }}
+$ wget -q {{ sum.browser_download_url }}
+$ wget -q {{ sig.browser_download_url }}
 $ sha512sum -c SHA512SUMS
 slpm.comp: OK
 $ gpg --recv-keys 35BA1675CD4AAD15
@@ -32,15 +46,4 @@ Primary key fingerprint: 8ADA 5049 424D 6F50 7841  BE2D 35BA 1675 CD4A AD15
 $ 
 ```
 
-## Releases
-
-{% assign latest_release = site.github.releases.first %}
-Latest release: {{ latest_release.tag_name }}
-
-{% for a in latest_release.assets %}
-  * [{{ a.name }}]({{ a.browser_download_url }})
-{% endfor %}
-
-{% assign binaries = latest_release.assets | where: "name", "slpm.comp" %}
-{% assign binary = binaries.first %}
-Download: [slpm.comp]({{ binary.browser_download_url }}) (size: {{ binary.size }})
+Older releases are available on [github]({{ site.github.releases_url }}).
