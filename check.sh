@@ -1,8 +1,11 @@
 #!/bin/sh
 
+set -e
+
 export SLPM_FULLNAME="John Doe"
 export USER="jdoe"
-ssh-agent ./slpm.comp << EOF | diff -u3 expected-output /dev/stdin
+./expected-output.sh > expected.out
+ssh-agent ./slpm.comp << EOF | diff -u3 expected.out /dev/stdin
 correct horse battery staple
 twitter.com
 1
@@ -11,3 +14,4 @@ facebook.com
 ssh github.com
 1
 EOF
+rm expected.out
