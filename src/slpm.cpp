@@ -114,6 +114,9 @@ main(int, char* [], char* envp[])
 	const char *const salt = getenv_or("SLPM_FULLNAME", "");
 	{
 		Buffer<uint8_t, 256> buf;
+		buf += "slpm ";
+		buf += VERSION;
+		buf += '\n';
 		buf += "SLPM_FULLNAME='";
 		buf += salt;
 		buf += "'\n";
