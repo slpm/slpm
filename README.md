@@ -15,12 +15,14 @@ enough][diceware]!
 
 ![The process](process.png)
 
-`slpm` currently uses the [MasterPasswordApp
-algorithm][mpwalgo] but it will default to [Argon2][] KDF and [blake2b][] secure
-hash in the future.
+`slpm` currently uses the original [MasterPasswordApp algorithm][mpwalgo] with
+[scrypt][] and [HMAC-SHA256][] but it will default to [Argon2][] KDF and
+[blake2b][] secure hash in the future.
 
 [diceware]: http://world.std.com/~reinhold/diceware.html
 [mpwalgo]: http://masterpasswordapp.com/algorithm.html
+[scrypt]: https://en.wikipedia.org/wiki/Scrypt
+[HMAC-SHA256]: https://en.wikipedia.org/wiki/HMAC
 [Argon2]: https://github.com/p-h-c/phc-winner-argon2
 [blake2b]: https://blake2.net/
 
