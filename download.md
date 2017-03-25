@@ -41,5 +41,6 @@ Latest release: {{ latest_release.tag_name }}
   * [{{ a.name }}]({{ a.browser_download_url }})
 {% endfor %}
 
-{% assign binary = latest_release.assets | where: "name", "slpm.comp" %}
+{% assign binaries = latest_release.assets | where: "name", "slpm.comp" %}
+{% assign binary = binaries.first %}
 Download: [slpm.comp]({{ binary.browser_download_url }}) (size: {{ binary.size }})
