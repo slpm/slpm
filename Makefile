@@ -5,6 +5,7 @@ LDFLAGS += -m32
 CPPFLAGS += -ffunction-sections -fdata-sections
 LDFLAGS += -Wl,--gc-sections
 
+CPPFLAGS += -DVERSION='"$(shell git describe --long)"'
 CPPFLAGS += -Wall -Wextra -pedantic -Werror
 CPPFLAGS += -Os -g
 CPPFLAGS += -DNDEBUG=1
