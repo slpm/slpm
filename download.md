@@ -43,6 +43,7 @@ gpg:                 aka "[jpeg image of size 2764]"
 gpg: WARNING: This key is not certified with a trusted signature!
 gpg:          There is no indication that the signature belongs to the owner.
 Primary key fingerprint: 8ADA 5049 424D 6F50 7841  BE2D 35BA 1675 CD4A AD15
+$ chmod +x slpm.comp
 $ 
 ```
 

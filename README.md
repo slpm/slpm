@@ -32,8 +32,6 @@ We run slpm using `Edgar Allan Poe` as full name and `footman liquid vacate
 rounding compare parsnip traffic uproar freemason duckbill` as passphrase:
 
 ```
-$ wget https://slpm.github.io/slpm.comp
-$ chmod +x slpm.comp
 $ ssh-agent bash --norc
 bash-4.3$ ssh-add -l
 The agent has no identities.
