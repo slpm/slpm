@@ -10,8 +10,7 @@ nor use any random source as it derives every password from:
 1. a site name, and
 1. a site counter.
 
-Therefore your passphrase should be [strong
-enough][diceware]!
+Therefore your passphrase should be [strong enough][diceware]!
 
 ![The process](process.png)
 
