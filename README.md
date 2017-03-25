@@ -36,7 +36,7 @@ $ ssh-agent bash --norc
 bash-4.3$ ssh-add -l
 The agent has no identities.
 bash-4.3$ SLPM_FULLNAME='Edgar Allan Poe' ./slpm.comp
-slpm v0.4.0-0-g33d1a7b
+slpm v0.4.0-0-g13ae78f
 SLPM_FULLNAME='Edgar Allan Poe'
 Passphrase: 
 Key derivation complete.
