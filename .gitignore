@@ -6,3 +6,4 @@ slpm
 *.sizes
 *.sign
 *SUMS
+*.out
