@@ -1,7 +1,7 @@
 ## Stateless Password Manager
 
 [![Build Status](https://travis-ci.org/slpm/slpm.svg?branch=master)](https://travis-ci.org/slpm/slpm)
-[Download](download)
+[![Download](https://img.shields.io/github/downloads/slpm/slpm/total.svg)](download)
 
 `slpm` is a dead simple password manager that will never store anything on disk
 nor use any random source as it derives every password from:
